@@ -1,0 +1,30 @@
+{
+  "name": "nanocyte-deploy-service",
+  "version": "1.0.0",
+  "description": "Deploy flows to nanocyte",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/octoblu/nanocyte-deploy-service.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/octoblu/nanocyte-deploy-service/issues"
+  },
+  "homepage": "https://github.com/octoblu/nanocyte-deploy-service#readme",
+  "devDependencies": {
+    "chai": "^3.2.0",
+    "coffee-script": "^1.10.0",
+    "mocha": "^2.3.2",
+    "sinon": "^1.16.1",
+    "sinon-chai": "^2.8.0"
+  },
+  "dependencies": {
+    "coffee-script": "^1.10.0",
+    "lodash": "^3.10.1"
+  }
+}
