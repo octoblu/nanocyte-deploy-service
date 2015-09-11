@@ -1,0 +1,12 @@
+language: node_js
+node_js:
+- '0.11'
+- '0.10'
+deploy:
+  provider: npm
+  email: sqrt@octoblu.com
+  api_key:
+    secure: qFhBV3bEZhus2X7lzUIOU+XIdXNqOOjU45PwLRg7t9bGrpoTyqmRmG14yex288Czq5AUAdQsr20EbHXWTdxLeop3e1aLnPrcZvllJKtsqiDwpFsk3/O/ApJvwabjsqKblukxnB/JuzK+SMmi2H7QElEmrpRQw42N3lSEUACb4/YFLvx+LTDdIfhRSJMNjtAERg+7SVlfnQpKS0HAy2JzS86Kta2X9FHALZ9dbFRvSEBadUerXEwOVIi7G1kMJt3nZH8FDY1Uadm2UKtDljVHgbfR8TsCIWC3LPxCiZZ/6ntDAszKvQByImIkshBVqQlSnkLq8TXbb3yBzqODjHlCUpUS+Y9X4S75cULAnOsoZZYLHalgC01NYCPD4U2sWR5X2R7tW3ISQY57E//hqp6Q9pwvX9oGO318gdmn4mfhO3Bxb9kzWAHPFxC6jIbIIGH2bLci8ocKKIz+QSGOYroCTkzpHwswnQtepe7AMqCcP1RgUkt0pR4yDz/8xiU+xFNHJd+fw8maoQIzJTpjRCzWvDmTXjGc/0luupGoy093WUVp69IulY42wgReWZHt6GJ1tHb7CWgiw3ZT45aqHZqDSm+23krSErvAii7s5kVCrrkZe6YOBFas5yczN5vgsmk19uQsTEScH8C6nuM6DTOg30Z3Yd6zAA+fmeYU9hpd1iE=
+  on:
+    tags: true
+    repo: octoblu/nanocyte-deployer
