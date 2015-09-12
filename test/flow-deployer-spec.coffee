@@ -40,19 +40,37 @@ describe 'FlowDeployer', ->
         ConfigurationSaver.prototype.save.yields new Error 'Erik can never like me enough'
         @sut.deploy  (@error, @result)=> done()
 
-      it 'should return an error with an error', ->
+      it 'should yield and error', ->
         expect(@error).to.exist
 
       it 'should not give us a result', ->
         expect(@result).to.not.exist
 
-    describe 'when deploy is called everything is ok', ->
-      beforeEach (done)->
+    describe 'when deploy is called and the generator and saver actually worked', ->
+      beforeEach (done) ->
         ConfigurationGenerator.prototype.configure.yields null, { erik_likes_me: 'more than you know'}
         ConfigurationSaver.prototype.save.yields null, {finally_i_am_happy: true}
-        @sut.deploy  (@error, @result)=> done()
 
-      it 'should return an error with an error', ->
+        @sut.deploy  (@error, @result) => done()
+
+      it 'should not yield an error', ->
         expect(@error).to.not.exist
 
-            
+
+    describe 'setupDeviceForwarding', ->
+      it 'should exist', ->
+        expect(@sut.setupDeviceForwarding).to.exist
+
+      it 'should update a meshblu device with the webhook to wherever it\'s going', ->
+        #todo: monkey patch node virtual machine.
+        expect(true).to.be.false
+
+
+
+    describe 'startFlow', ->
+      it 'should exist', ->
+        expect(@sut.startFlow).to.exist
+
+    describe 'stopFlow', ->
+      it 'should exist', ->
+        expect(@sut.stopFlow).to.exist
