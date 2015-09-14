@@ -9,11 +9,13 @@ class FlowDeployer
     @meshbluHttp = new MeshbluHttp @flowUUid, @flowToken
 
   deploy: (callback) =>
-    @meshbluHttp.whoami (error, device) =>
+    @meshbluHttp.whoami (error, device) =>      
       return callback error if error?
       @configurer.configure device.flow, (error, flowData) =>
-        return callback error if error
-        @saver.save flowData, callback
+        return callback error if error?
+        @saver.save flowData, (error) =>
+          return callback error if error?
+          @setupDeviceForwarding device, callback
 
   setupDeviceForwarding: (device, callback) =>
     @messageHook = url: @forwardUrl, method: 'POST'

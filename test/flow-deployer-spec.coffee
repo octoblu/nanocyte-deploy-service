@@ -31,6 +31,7 @@ describe 'FlowDeployer', ->
 
     describe 'when deploy is called', ->
       beforeEach (done)->
+        @sut.setupDeviceForwarding = sinon.stub().yields null
         @sut.deploy  => done()
 
       it 'should call configuration generator with the flow', ->
@@ -77,12 +78,11 @@ describe 'FlowDeployer', ->
       beforeEach (done) ->
         @sut.configurer.configure.yields null, { erik_likes_me: 'more than you know'}
         @sut.saver.save.yields null, {finally_i_am_happy: true}
-
+        @sut.setupDeviceForwarding = sinon.stub().yields null
         @sut.deploy  (@error, @result) => done()
 
-      it 'should not yield an error', ->
-        expect(@error).to.not.exist
-
+      it 'should call setupDeviceForwarding', ->
+        expect(@sut.setupDeviceForwarding).to.have.been.called
 
     describe 'setupDeviceForwarding', ->
       describe 'when called with a flow that does not have messageHooks', ->
