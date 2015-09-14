@@ -1,5 +1,6 @@
 _ = require 'lodash'
-
+FLOW_START_NODE = 'meshblu-start'
+FLOW_STOP_NODE = 'meshblu-stop'
 class FlowDeployer
   constructor: (@flowUuid, @flowToken, @forwardUrl, dependencies={}) ->
     {ConfigurationSaver, ConfigurationGenerator, MeshbluHttp} = dependencies
@@ -8,19 +9,23 @@ class FlowDeployer
     @saver = new ConfigurationSaver
     @meshbluHttp = new MeshbluHttp @flowUUid, @flowToken
 
-  deploy: (callback) =>
-    @meshbluHttp.whoami (error, device) =>      
+  deploy: (callback=->) =>
+    @meshbluHttp.whoami (error, device) =>
       return callback error if error?
       @configurer.configure device.flow, (error, flowData) =>
         return callback error if error?
         @saver.save flowData, (error) =>
           return callback error if error?
-          @setupDeviceForwarding device, callback
+          @setupDeviceForwarding device, (error) =>
+            return callback error if error?
+            @startFlow callback
 
-  setupDeviceForwarding: (device, callback) =>
+  setupDeviceForwarding: (device, callback=->) =>
     @messageHook = url: @forwardUrl, method: 'POST'
+
     @createMessageHooks =
       $set: 'meshblu.messageHooks': [ @messageHook ]
+
     @updateMessageHooks =
       $push: 'meshblu.messageHooks': @messageHook
 
@@ -29,9 +34,10 @@ class FlowDeployer
 
     @meshbluHttp.updateDangerously @flowUuid, @updateMessageHooks, callback
 
+  startFlow: (callback=->) =>
+    @meshbluHttp.message [@flowUuid], payload: from: FLOW_START_NODE, callback
 
-  startFlow: =>
-
-  stopFlow: =>
+  stopFlow: (callback=->) =>
+    @meshbluHttp.message [@flowUuid], payload: from: FLOW_STOP_NODE, callback
 
 module.exports = FlowDeployer

@@ -13,6 +13,7 @@ class MeshbluHttp
   constructor: ->
     @whoami = sinon.stub()
     @updateDangerously = sinon.stub()
+    @message = sinon.stub()
 
 describe 'FlowDeployer', ->
   describe 'when constructed with a flow', ->
@@ -32,6 +33,7 @@ describe 'FlowDeployer', ->
     describe 'when deploy is called', ->
       beforeEach (done)->
         @sut.setupDeviceForwarding = sinon.stub().yields null
+        @sut.startFlow = sinon.stub().yields null
         @sut.deploy  => done()
 
       it 'should call configuration generator with the flow', ->
@@ -78,11 +80,16 @@ describe 'FlowDeployer', ->
       beforeEach (done) ->
         @sut.configurer.configure.yields null, { erik_likes_me: 'more than you know'}
         @sut.saver.save.yields null, {finally_i_am_happy: true}
+        @sut.startFlow = sinon.stub().yields null
         @sut.setupDeviceForwarding = sinon.stub().yields null
+
         @sut.deploy  (@error, @result) => done()
 
       it 'should call setupDeviceForwarding', ->
         expect(@sut.setupDeviceForwarding).to.have.been.called
+
+      it 'should call startFlow', ->
+        expect(@sut.startFlow).to.have.been.called
 
     describe 'setupDeviceForwarding', ->
       describe 'when called with a flow that does not have messageHooks', ->
@@ -132,9 +139,51 @@ describe 'FlowDeployer', ->
           expect(@sut.meshbluHttp.updateDangerously).to.not.have.been.called
 
     describe 'startFlow', ->
-      it 'should exist', ->
-        expect(@sut.startFlow).to.exist
+      describe 'when called and there is no errors', ->
+        beforeEach (done) ->
+          @message =
+            payload:
+              from: "meshblu-start"
+
+          @sut.meshbluHttp.message.yields null, null
+          @sut.startFlow (@error, @result) => done()
+
+        it 'should message meshblu with the a flow start message', ->
+          expect(@sut.meshbluHttp.message).to.have.been.calledWith [@flowUuid], @message
+
+      describe 'when called and meshblu returns an error', ->
+        beforeEach (done) ->
+          @message =
+            payload:
+              from: "meshblu-start"
+
+          @sut.meshbluHttp.message.yields new Error 'duck army', null
+          @sut.startFlow (@error, @result) => done()
+
+        it 'should call the callback with the error', ->
+          expect(@error).to.exist
 
     describe 'stopFlow', ->
-      it 'should exist', ->
-        expect(@sut.stopFlow).to.exist
+      describe 'when called and there is no error', ->
+        beforeEach (done) ->
+          @message =
+            payload:
+              from: "meshblu-stop"
+
+          @sut.meshbluHttp.message.yields null, null
+          @sut.stopFlow (@error, @result) => done()
+
+        it 'should message meshblu with the a flow stop message', ->
+          expect(@sut.meshbluHttp.message).to.have.been.calledWith [@flowUuid], @message
+
+      describe 'when called and meshblu returns an error', ->
+        beforeEach (done) ->
+          @message =
+            payload:
+              from: "meshblu-stop"
+
+          @sut.meshbluHttp.message.yields new Error 'look at meeeeee', null
+          @sut.stopFlow (@error, @result) => done()
+
+        it 'should call the callback with the error', ->
+          expect(@error).to.exist
