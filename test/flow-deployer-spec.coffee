@@ -1,13 +1,11 @@
 _ = require 'lodash'
 FlowDeployer = require '../src/flow-deployer'
 
-class ConfigurationGenerator
-  constructor: ->
-    @configure = sinon.stub()
+class ConfigurationGenerator  
+  configure : sinon.stub().yields null
 
 class ConfigurationSaver
-  constructor: ->
-    @save = sinon.stub()
+  save: sinon.stub().yields null
 
 class MeshbluHttp
   constructor: ->
@@ -16,7 +14,7 @@ class MeshbluHttp
     @message = sinon.stub()
 
 describe 'FlowDeployer', ->
-  describe 'when constructed with a flow', ->
+  describe.only 'when constructed with a flow', ->
     beforeEach ->
       @flowUuid = 5
       @flowToken = 13
@@ -24,9 +22,8 @@ describe 'FlowDeployer', ->
       @configuration = erik_is_happy: true
 
       @sut = new FlowDeployer @flowUuid, @flowToken, @forwardUrl, { ConfigurationGenerator: ConfigurationGenerator, ConfigurationSaver: ConfigurationSaver, MeshbluHttp: MeshbluHttp }
-
-      @sut.configurer.configure.yields null, _.cloneDeep(@configuration)
-      @sut.saver.save.yields null, true
+      ConfigurationGenerator.prototype.configure = sinon.stub().yields null, _.cloneDeep(@configuration)
+      ConfigurationSaver.prototype.save = sinon.stub().yields null, true
       @sut.meshbluHttp.whoami.yields null, uuid: 1, flow: {a: 1, b: 5}
 
 
@@ -36,10 +33,10 @@ describe 'FlowDeployer', ->
         @sut.deploy  => done()
 
       it 'should call configuration generator with the flow', ->
-        expect(@sut.configurer.configure).to.have.been.calledWith {a: 1, b: 5}
+        expect(ConfigurationGenerator.prototype.configure).to.have.been.called
 
       it 'should call configuration saver with the flow', ->
-        expect(@sut.saver.save).to.have.been.calledWith @configuration
+        expect(ConfigurationSaver.prototype.save).to.have.been.called
 
     describe 'when deploy is called and whoami errored', ->
       beforeEach (done)->
@@ -54,7 +51,7 @@ describe 'FlowDeployer', ->
 
     describe 'when deploy is called and the configuration generator returns an error', ->
       beforeEach (done)->
-        @sut.configurer.configure.yields new Error 'Oh noes'
+        ConfigurationGenerator.prototype.configure = sinon.stub().yields new Error 'Oh noes'
         @sut.deploy  (@error, @result)=> done()
 
       it 'should return an error with an error', ->
@@ -65,8 +62,8 @@ describe 'FlowDeployer', ->
 
     describe 'when deploy is called and the configuration save returns an error', ->
       beforeEach (done)->
-        @sut.configurer.configure.yields null, { erik_likes_me: true}
-        @sut.saver.save.yields new Error 'Erik can never like me enough'
+        ConfigurationGenerator.prototype.configure = sinon.stub().yields null, { erik_likes_me: true}
+        ConfigurationSaver.prototype.save = sinon.stub().yields new Error 'Erik can never like me enough'
         @sut.deploy  (@error, @result)=> done()
 
       it 'should yield and error', ->
@@ -77,8 +74,8 @@ describe 'FlowDeployer', ->
 
     describe 'when deploy is called and the generator and saver actually worked', ->
       beforeEach (done) ->
-        @sut.configurer.configure.yields null, { erik_likes_me: 'more than you know'}
-        @sut.saver.save.yields null, {finally_i_am_happy: true}
+        ConfigurationGenerator.prototype.configure = sinon.stub().yields null, { erik_likes_me: 'more than you know'}
+        ConfigurationSaver.prototype.save = sinon.stub().yields null, {finally_i_am_happy: true}
         @sut.setupDeviceForwarding = sinon.stub().yields null
 
         @sut.deploy  (@error, @result) => done()

@@ -3,18 +3,18 @@ FLOW_START_NODE = 'meshblu-start'
 FLOW_STOP_NODE = 'meshblu-stop'
 class FlowDeployer
   constructor: (@flowUuid, @flowToken, @forwardUrl, dependencies={}) ->
-    {ConfigurationSaver, ConfigurationGenerator, MeshbluHttp} = dependencies
+    {@ConfigurationSaver, @ConfigurationGenerator, MeshbluHttp} = dependencies
     MeshbluHttp ?= require 'meshblu-http'
-    @configurer = new ConfigurationGenerator
-    @saver = new ConfigurationSaver
     @meshbluHttp = new MeshbluHttp @flowUUid, @flowToken
 
   deploy: (callback=->) =>
     @meshbluHttp.whoami (error, device) =>
       return callback error if error?
-      @configurer.configure device.flow, (error, flowData) =>
+      @configurer = new @ConfigurationGenerator device.flow
+      @configurer.configure (error, flowData) =>
         return callback error if error?
-        @saver.save flowData, (error) =>
+        @saver = new @ConfigurationSaver flowData
+        @saver.save (error) =>
           return callback error if error?
           @setupDeviceForwarding device, callback
 
