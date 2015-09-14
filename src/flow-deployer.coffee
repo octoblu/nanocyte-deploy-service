@@ -16,9 +16,7 @@ class FlowDeployer
         return callback error if error?
         @saver.save flowData, (error) =>
           return callback error if error?
-          @setupDeviceForwarding device, (error) =>
-            return callback error if error?
-            @startFlow callback
+          @setupDeviceForwarding device, callback
 
   setupDeviceForwarding: (device, callback=->) =>
     @messageHook = url: @forwardUrl, method: 'POST'
