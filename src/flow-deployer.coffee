@@ -6,7 +6,7 @@ MeshbluConfig = require 'meshblu-config'
 class FlowDeployer
   constructor: (@options, dependencies={}) ->
     {@flowUuid, @instanceId, @flowToken, @forwardUrl} = @options
-    {@ConfigurationSaver, @ConfigurationGenerator, MeshbluHttp} = dependencies
+    {@configurationSaver, @configurationGenerator, MeshbluHttp} = dependencies
     MeshbluHttp ?= require 'meshblu-http'
     meshbluConfig = new MeshbluConfig
     meshbluJSON = _.assign meshbluConfig.toJSON(), uuid: @flowUuid, token: @flowToken
@@ -15,15 +15,13 @@ class FlowDeployer
   deploy: (callback=->) =>
     @meshbluHttp.whoami (error, device) =>
       return callback error if error?
-      @configurer = new @ConfigurationGenerator device.flow
-      @configurer.configure (error, flowData) =>
+      @configurationGenerator.configure device.flow, (error, flowData) =>
         return callback error if error?
-        @saver = new @ConfigurationSaver
+        @configurationSaver.save
           flowId: @flowUuid
           instanceId: @instanceId
           flowData: flowData
-
-        @saver.save (error) =>
+        , (error) =>
           return callback error if error?
           @setupDeviceForwarding device, callback
 

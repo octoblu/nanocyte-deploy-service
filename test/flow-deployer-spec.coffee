@@ -1,9 +1,6 @@
 _ = require 'lodash'
 FlowDeployer = require '../src/flow-deployer'
 
-class ConfigurationGenerator
-  configure : sinon.stub().yields null
-
 class ConfigurationSaver
   save: sinon.stub().yields null
 
@@ -27,21 +24,28 @@ describe 'FlowDeployer', ->
         forwardUrl: @forwardUrl
         instanceId: 'an-instance-id'
 
-      @sut = new FlowDeployer options, { ConfigurationGenerator: ConfigurationGenerator, ConfigurationSaver: ConfigurationSaver, MeshbluHttp: MeshbluHttp }
-      ConfigurationGenerator.prototype.configure = sinon.stub().yields null, _.cloneDeep(@configuration)
-      ConfigurationSaver.prototype.save = sinon.stub().yields null, true
+      @configurationGenerator = configure: sinon.stub()
+      @configurationSaver = save: sinon.stub()
+
+      @sut = new FlowDeployer options,
+        configurationGenerator: @configurationGenerator
+        configurationSaver: @configurationSaver
+        MeshbluHttp: MeshbluHttp
+
       @sut.meshbluHttp.whoami.yields null, uuid: 1, flow: {a: 1, b: 5}
 
     describe 'when deploy is called', ->
       beforeEach (done)->
+        @configurationGenerator.configure.yields null
+        @configurationSaver.save.yields null
         @sut.setupDeviceForwarding = sinon.stub().yields null
         @sut.deploy  => done()
 
       it 'should call configuration generator with the flow', ->
-        expect(ConfigurationGenerator.prototype.configure).to.have.been.called
+        expect(@configurationGenerator.configure).to.have.been.called
 
       it 'should call configuration saver with the flow', ->
-        expect(ConfigurationSaver.prototype.save).to.have.been.called
+        expect(@configurationSaver.save).to.have.been.called
 
     describe 'when deploy is called and whoami errored', ->
       beforeEach (done)->
@@ -56,7 +60,7 @@ describe 'FlowDeployer', ->
 
     describe 'when deploy is called and the configuration generator returns an error', ->
       beforeEach (done)->
-        ConfigurationGenerator.prototype.configure = sinon.stub().yields new Error 'Oh noes'
+        @configurationGenerator.configure.yields new Error 'Oh noes'
         @sut.deploy  (@error, @result)=> done()
 
       it 'should return an error with an error', ->
@@ -67,8 +71,8 @@ describe 'FlowDeployer', ->
 
     describe 'when deploy is called and the configuration save returns an error', ->
       beforeEach (done)->
-        ConfigurationGenerator.prototype.configure = sinon.stub().yields null, { erik_likes_me: true}
-        ConfigurationSaver.prototype.save = sinon.stub().yields new Error 'Erik can never like me enough'
+        @configurationGenerator.configure.yields null, { erik_likes_me: true}
+        @configurationSaver.save.yields new Error 'Erik can never like me enough'
         @sut.deploy  (@error, @result)=> done()
 
       it 'should yield and error', ->
@@ -79,8 +83,8 @@ describe 'FlowDeployer', ->
 
     describe 'when deploy is called and the generator and saver actually worked', ->
       beforeEach (done) ->
-        ConfigurationGenerator.prototype.configure = sinon.stub().yields null, { erik_likes_me: 'more than you know'}
-        ConfigurationSaver.prototype.save = sinon.stub().yields null, {finally_i_am_happy: true}
+        @configurationGenerator.configure.yields null, { erik_likes_me: 'more than you know'}
+        @configurationSaver.save.yields null, {finally_i_am_happy: true}
         @sut.setupDeviceForwarding = sinon.stub().yields null
 
         @sut.deploy  (@error, @result) => done()
@@ -109,15 +113,14 @@ describe 'FlowDeployer', ->
     describe 'startFlow', ->
       describe 'when called and there is no errors', ->
         beforeEach (done) ->
-          @message =
-            payload:
-              from: "meshblu-start"
-
           @sut.meshbluHttp.message.yields null, null
           @sut.startFlow (@error, @result) => done()
 
         it 'should message meshblu with the a flow start message', ->
-          expect(@sut.meshbluHttp.message).to.have.been.calledWith [@flowUuid], @message
+          expect(@sut.meshbluHttp.message).to.have.been.calledWith
+            devices: [@flowUuid]
+            payload:
+              from: "meshblu-start"
 
       describe 'when called and meshblu returns an error', ->
         beforeEach (done) ->
@@ -134,22 +137,17 @@ describe 'FlowDeployer', ->
     describe 'stopFlow', ->
       describe 'when called and there is no error', ->
         beforeEach (done) ->
-          @message =
-            payload:
-              from: "meshblu-stop"
-
           @sut.meshbluHttp.message.yields null, null
           @sut.stopFlow (@error, @result) => done()
 
         it 'should message meshblu with the a flow stop message', ->
-          expect(@sut.meshbluHttp.message).to.have.been.calledWith [@flowUuid], @message
-
-      describe 'when called and meshblu returns an error', ->
-        beforeEach (done) ->
-          @message =
+          expect(@sut.meshbluHttp.message).to.have.been.calledWith
+            devices: [@flowUuid]
             payload:
               from: "meshblu-stop"
 
+      describe 'when called and meshblu returns an error', ->
+        beforeEach (done) ->
           @sut.meshbluHttp.message.yields new Error 'look at meeeeee', null
           @sut.stopFlow (@error, @result) => done()
 
