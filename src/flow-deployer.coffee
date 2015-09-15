@@ -2,7 +2,8 @@ _ = require 'lodash'
 FLOW_START_NODE = 'meshblu-start'
 FLOW_STOP_NODE = 'meshblu-stop'
 class FlowDeployer
-  constructor: (@flowUuid, @flowToken, @forwardUrl, dependencies={}) ->
+  constructor: (@options, dependencies={}) ->
+    {@flowUuid, @instanceId, @flowToken, @forwardUrl} = @options
     {@ConfigurationSaver, @ConfigurationGenerator, MeshbluHttp} = dependencies
     MeshbluHttp ?= require 'meshblu-http'
     @meshbluHttp = new MeshbluHttp @flowUUid, @flowToken
@@ -15,23 +16,20 @@ class FlowDeployer
         return callback error if error?
         @saver = new @ConfigurationSaver
           flowId: @flowUuid
+          instanceId: @instanceId
           flowData: flowData
-          
+
         @saver.save (error) =>
           return callback error if error?
           @setupDeviceForwarding device, callback
 
   setupDeviceForwarding: (device, callback=->) =>
-    @messageHook = url: @forwardUrl, method: 'POST'
-
-    @createMessageHooks =
-      $set: 'meshblu.messageHooks': [ @messageHook ]
+    @messageHook =
+      url: @forwardUrl
+      method: 'POST'
 
     @updateMessageHooks =
-      $push: 'meshblu.messageHooks': @messageHook
-
-    return callback null if _.findWhere(device.meshblu?.messageHooks, @messageHook)?
-    return @meshbluHttp.updateDangerously @flowUuid, @createMessageHooks, callback unless device.meshblu?.messageHooks
+      $addToSet: 'meshblu.messageHooks': @messageHook
 
     @meshbluHttp.updateDangerously @flowUuid, @updateMessageHooks, callback
 

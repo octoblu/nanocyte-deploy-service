@@ -21,7 +21,13 @@ describe 'FlowDeployer', ->
       @forwardUrl = "http://www.zombo.com"
       @configuration = erik_is_happy: true
 
-      @sut = new FlowDeployer @flowUuid, @flowToken, @forwardUrl, { ConfigurationGenerator: ConfigurationGenerator, ConfigurationSaver: ConfigurationSaver, MeshbluHttp: MeshbluHttp }
+      options =
+        flowUuid: @flowUuid
+        flowToken: @flowToken
+        forwardUrl: @forwardUrl
+        instanceId: 'an-instance-id'
+
+      @sut = new FlowDeployer options, { ConfigurationGenerator: ConfigurationGenerator, ConfigurationSaver: ConfigurationSaver, MeshbluHttp: MeshbluHttp }
       ConfigurationGenerator.prototype.configure = sinon.stub().yields null, _.cloneDeep(@configuration)
       ConfigurationSaver.prototype.save = sinon.stub().yields null, true
       @sut.meshbluHttp.whoami.yields null, uuid: 1, flow: {a: 1, b: 5}
@@ -83,51 +89,22 @@ describe 'FlowDeployer', ->
         expect(@sut.setupDeviceForwarding).to.have.been.called
 
     describe 'setupDeviceForwarding', ->
-      describe 'when called with a flow that does not have messageHooks', ->
-        beforeEach (done) ->
-          @createMessageHooks =
-            $set:
-              'meshblu.messageHooks': [{ url: @forwardUrl, method: 'POST' }]
-          @device = uuid: 1, flow: {a: 1, b: 5}
-          @sut.meshbluHttp.updateDangerously.yields null, null
-          @sut.setupDeviceForwarding @device, (@error, @result) => done()
+      beforeEach (done) ->
+        @updateMessageHooks =
+          $addToSet:
+            'meshblu.messageHooks': { url: @forwardUrl, method: 'POST' }
 
-        it "should update a meshblu device with the webhook to wherever it's going", ->
-          expect(@sut.meshbluHttp.updateDangerously).to.have.been.calledWith @flowUuid, @createMessageHooks
+        @device =
+          uuid: 1,
+          flow: {a: 1, b: 5},
+          meshblu:
+            messageHooks: [ {url: 'http://www.neopets.com', method: 'DELETE'} ]
 
-      describe 'when called with a flow that has messageHooks', ->
-        beforeEach (done) ->
-          @updateMessageHooks =
-            $push:
-              'meshblu.messageHooks': { url: @forwardUrl, method: 'POST' }
+        @sut.meshbluHttp.updateDangerously.yields null, null
+        @sut.setupDeviceForwarding @device, (@error, @result) => done()
 
-          @device =
-            uuid: 1,
-            flow: {a: 1, b: 5},
-            meshblu:
-              messageHooks: [ {url: 'http://www.neopets.com', method: 'DELETE'} ]
-
-          @sut.meshbluHttp.updateDangerously.yields null, null
-          @sut.setupDeviceForwarding @device, (@error, @result) => done()
-
-        it "should update a meshblu device with the webhook to wherever it's going", ->
-          expect(@sut.meshbluHttp.updateDangerously).to.have.been.calledWith @flowUuid, @updateMessageHooks
-
-      describe 'when called with a flow that has the same messageHook already', ->
-        beforeEach (done) ->
-          @device =
-            uuid: 1,
-            flow: {a: 1, b: 5},
-            meshblu:
-              messageHooks: [
-                {url: 'http://www.neopets.com', method: 'DELETE'}
-                {url: @forwardUrl, method: 'POST'}
-              ]
-
-          @sut.setupDeviceForwarding @device, (@error, @result) => done()
-
-        it "should not update a meshblu device", ->
-          expect(@sut.meshbluHttp.updateDangerously).to.not.have.been.called
+      it "should update a meshblu device with the webhook to wherever it's going", ->
+        expect(@sut.meshbluHttp.updateDangerously).to.have.been.calledWith @flowUuid, @updateMessageHooks
 
     describe 'startFlow', ->
       describe 'when called and there is no errors', ->
