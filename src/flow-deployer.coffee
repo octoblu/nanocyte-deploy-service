@@ -9,7 +9,7 @@ class FlowDeployer
     {@ConfigurationSaver, @ConfigurationGenerator, MeshbluHttp} = dependencies
     MeshbluHttp ?= require 'meshblu-http'
     meshbluConfig = new MeshbluConfig
-    meshbluJSON = _.assign meshbluConfig.toJSON(), uuid: @flowUUid, token: @flowToken
+    meshbluJSON = _.assign meshbluConfig.toJSON(), uuid: @flowUuid, token: @flowToken
     @meshbluHttp = new MeshbluHttp meshbluJSON
 
   deploy: (callback=->) =>
@@ -38,9 +38,19 @@ class FlowDeployer
     @meshbluHttp.updateDangerously @flowUuid, @updateMessageHooks, callback
 
   startFlow: (callback=->) =>
-    @meshbluHttp.message [@flowUuid], payload: from: FLOW_START_NODE, callback
+    message =
+      devices: [@flowUuid]
+      payload:
+        from: FLOW_START_NODE
+
+    @meshbluHttp.message message, callback
 
   stopFlow: (callback=->) =>
-    @meshbluHttp.message [@flowUuid], payload: from: FLOW_STOP_NODE, callback
+    message =
+      devices: [@flowUuid]
+      payload:
+        from: FLOW_STOP_NODE
+
+    @meshbluHttp.message message, callback
 
 module.exports = FlowDeployer
