@@ -1,7 +1,7 @@
 _ = require 'lodash'
 FlowDeployer = require '../src/flow-deployer'
 
-class ConfigurationGenerator  
+class ConfigurationGenerator
   configure : sinon.stub().yields null
 
 class ConfigurationSaver
@@ -25,7 +25,6 @@ describe 'FlowDeployer', ->
       ConfigurationGenerator.prototype.configure = sinon.stub().yields null, _.cloneDeep(@configuration)
       ConfigurationSaver.prototype.save = sinon.stub().yields null, true
       @sut.meshbluHttp.whoami.yields null, uuid: 1, flow: {a: 1, b: 5}
-
 
     describe 'when deploy is called', ->
       beforeEach (done)->

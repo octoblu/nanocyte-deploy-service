@@ -13,7 +13,10 @@ class FlowDeployer
       @configurer = new @ConfigurationGenerator device.flow
       @configurer.configure (error, flowData) =>
         return callback error if error?
-        @saver = new @ConfigurationSaver flowData
+        @saver = new @ConfigurationSaver
+          flowId: @flowUuid
+          flowData: flowData
+          
         @saver.save (error) =>
           return callback error if error?
           @setupDeviceForwarding device, callback
