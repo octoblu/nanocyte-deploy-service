@@ -1,12 +1,16 @@
 _ = require 'lodash'
 FLOW_START_NODE = 'meshblu-start'
 FLOW_STOP_NODE = 'meshblu-stop'
+MeshbluConfig = require 'meshblu-config'
+
 class FlowDeployer
   constructor: (@options, dependencies={}) ->
     {@flowUuid, @instanceId, @flowToken, @forwardUrl} = @options
     {@ConfigurationSaver, @ConfigurationGenerator, MeshbluHttp} = dependencies
     MeshbluHttp ?= require 'meshblu-http'
-    @meshbluHttp = new MeshbluHttp @flowUUid, @flowToken
+    meshbluConfig = new MeshbluConfig
+    meshbluJSON = _.assign meshbluConfig.toJSON(), uuid: @flowUUid, token: @flowToken
+    @meshbluHttp = new MeshbluHttp meshbluJSON
 
   deploy: (callback=->) =>
     @meshbluHttp.whoami (error, device) =>
