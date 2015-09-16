@@ -42,7 +42,7 @@ describe 'FlowDeployer', ->
         @sut.deploy  => done()
 
       it 'should call configuration generator with the flow', ->
-        expect(@configurationGenerator.configure).to.have.been.called
+        expect(@configurationGenerator.configure).to.have.been.calledWith { a: 1, b: 5 }, 13
 
       it 'should call configuration saver with the flow', ->
         expect(@configurationSaver.save).to.have.been.called

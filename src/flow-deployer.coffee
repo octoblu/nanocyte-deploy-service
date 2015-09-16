@@ -15,7 +15,7 @@ class FlowDeployer
   deploy: (callback=->) =>
     @meshbluHttp.whoami (error, device) =>
       return callback error if error?
-      @configurationGenerator.configure device.flow, (error, flowData) =>
+      @configurationGenerator.configure device.flow, @flowToken, (error, flowData) =>
         return callback error if error?
         @configurationSaver.save
           flowId: @flowUuid
