@@ -58,7 +58,7 @@ describe 'FlowDeployer', ->
             user: 'some-user-uuid'
             pass: 'some-user-token'
 
-        expect(@request.get).to.have.been.calledWith "https://api.octoblu.com/api/v1/flows/#{@flowUuid}", options
+        expect(@request.get).to.have.been.calledWith "https://api.octoblu.com/api/flows/#{@flowUuid}", options
 
     describe 'when deploy is called and flow get errored', ->
       beforeEach (done)->
