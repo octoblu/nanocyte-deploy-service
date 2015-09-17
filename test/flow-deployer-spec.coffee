@@ -6,15 +6,15 @@ class ConfigurationSaver
 
 class MeshbluHttp
   constructor: ->
-    @whoami = sinon.stub()
     @updateDangerously = sinon.stub()
     @message = sinon.stub()
 
 describe 'FlowDeployer', ->
   describe.only 'when constructed with a flow', ->
     beforeEach ->
-      @flowUuid = 5
-      @flowToken = 13
+      @request = get: sinon.stub()
+      @flowUuid = 'the-flow-uuid'
+      @flowToken = 'the-flow-token'
       @forwardUrl = "http://www.zombo.com"
       @configuration = erik_is_happy: true
 
@@ -23,6 +23,9 @@ describe 'FlowDeployer', ->
         flowToken: @flowToken
         forwardUrl: @forwardUrl
         instanceId: 'an-instance-id'
+        userUuid: 'some-user-uuid'
+        userToken: 'some-user-token'
+        octobluUrl: 'https://api.octoblu.com'
 
       @configurationGenerator = configure: sinon.stub()
       @configurationSaver = save: sinon.stub()
@@ -31,8 +34,9 @@ describe 'FlowDeployer', ->
         configurationGenerator: @configurationGenerator
         configurationSaver: @configurationSaver
         MeshbluHttp: MeshbluHttp
+        request: @request
 
-      @sut.meshbluHttp.whoami.yields null, uuid: 1, flow: {a: 1, b: 5}
+      @request.get.yields null, {a: 1, b: 5}
 
     describe 'when deploy is called', ->
       beforeEach (done)->
@@ -42,15 +46,27 @@ describe 'FlowDeployer', ->
         @sut.deploy  => done()
 
       it 'should call configuration generator with the flow', ->
-        expect(@configurationGenerator.configure).to.have.been.calledWith { a: 1, b: 5 }, 13
+        expect(@configurationGenerator.configure).to.have.been.calledWith { a: 1, b: 5 }, 'the-flow-token'
 
       it 'should call configuration saver with the flow', ->
         expect(@configurationSaver.save).to.have.been.called
 
-    describe 'when deploy is called and whoami errored', ->
+      it 'should call request.get', ->
+        options =
+          json: true
+          auth :
+            user: 'some-user-uuid'
+            pass: 'some-user-token'
+
+        expect(@request.get).to.have.been.calledWith "https://api.octoblu.com/api/v1/flows/#{@flowUuid}", options
+
+    describe 'when deploy is called and flow get errored', ->
       beforeEach (done)->
-        @sut.meshbluHttp.whoami.yields new Error 'whoa shits bad', null
+        @request.get.yields new Error 'whoa shits bad', null
         @sut.deploy  (@error, @result) => done()
+
+      it 'should call request.get', ->
+        expect(@request.get).to.have.been.called
 
       it 'should yield and error', ->
         expect(@error).to.exist
