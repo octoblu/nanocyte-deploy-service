@@ -8,6 +8,7 @@ class FlowDeployer
     {@flowUuid, @instanceId, @flowToken, @forwardUrl, @userUuid, @userToken, @octobluUrl} = @options
     {@configurationSaver, @configurationGenerator, MeshbluHttp, @request} = dependencies
     MeshbluHttp ?= require 'meshblu-http'
+    @request ?= require 'request'
     meshbluConfig = new MeshbluConfig
     meshbluJSON = _.assign meshbluConfig.toJSON(), uuid: @flowUuid, token: @flowToken
     @meshbluHttp = new MeshbluHttp meshbluJSON
