@@ -20,7 +20,7 @@ class FlowDeployer
         user: @userUuid
         pass: @userToken
 
-    @request.get "#{@octobluUrl}/api/flows/#{@flowUuid}", options, (error, body) =>
+    @request.get "#{@octobluUrl}/api/flows/#{@flowUuid}", options, (error, response, body) =>
       return callback error if error?
       @configurationGenerator.configure body, @flowToken, (error, flowData) =>
         return callback error if error?

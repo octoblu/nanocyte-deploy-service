@@ -36,7 +36,7 @@ describe 'FlowDeployer', ->
         MeshbluHttp: MeshbluHttp
         request: @request
 
-      @request.get.yields null, {a: 1, b: 5}
+      @request.get.yields null, {}, {a: 1, b: 5}
 
     describe 'when deploy is called', ->
       beforeEach (done)->
