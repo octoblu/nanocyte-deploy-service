@@ -36,6 +36,7 @@ class FlowDeployer
     @messageHook =
       url: @forwardUrl
       method: 'POST'
+      generateAndForwardMeshbluCredentials: true
 
     @updateMessageHooks =
       $addToSet: 'meshblu.messageHooks': @messageHook
