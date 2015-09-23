@@ -4,7 +4,7 @@
   "description": "Deploy flows to nanocyte",
   "main": "index.js",
   "scripts": {
-    "test": "mocha"
+    "test": "istanbul cover _mocha -- -R spec"
   },
   "repository": {
     "type": "git",
@@ -17,10 +17,13 @@
   },
   "homepage": "https://github.com/octoblu/nanocyte-deployer#readme",
   "devDependencies": {
-    "chai": "^3.2.0",
+    "chai": "^3.3.0",
+    "coffee-coverage": "^0.6.3",
     "coffee-script": "^1.10.0",
-    "mocha": "^2.3.2",
-    "sinon": "^1.16.1",
+    "istanbul": "^0.3.20",
+    "mocha": "^2.3.3",
+    "mocha-istanbul": "^0.2.0",
+    "sinon": "^1.17.0",
     "sinon-chai": "^2.8.0"
   },
   "dependencies": {

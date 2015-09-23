@@ -112,13 +112,13 @@ describe 'FlowDeployer', ->
       beforeEach (done) ->
         @updateMessageHooks =
           $addToSet:
-            'meshblu.messageHooks': { url: @forwardUrl, method: 'POST' }
+            'meshblu.messageHooks': { generateAndForwardMeshbluCredentials: true, url: @forwardUrl, method: 'POST' }
 
         @device =
           uuid: 1,
           flow: {a: 1, b: 5},
           meshblu:
-            messageHooks: [ {url: 'http://www.neopets.com', method: 'DELETE'} ]
+            messageHooks: [ {generateAndForwardMeshbluCredentials: true, url: 'http://www.neopets.com', method: 'DELETE'} ]
 
         @sut.meshbluHttp.updateDangerously.yields null, null
         @sut.setupDeviceForwarding @device, (@error, @result) => done()
@@ -136,13 +136,13 @@ describe 'FlowDeployer', ->
           expect(@sut.meshbluHttp.message).to.have.been.calledWith
             devices: [@flowUuid]
             payload:
-              from: "meshblu-start"
+              from: "engine-start"
 
       describe 'when called and meshblu returns an error', ->
         beforeEach (done) ->
           @message =
             payload:
-              from: "meshblu-start"
+              from: "engine-start"
 
           @sut.meshbluHttp.message.yields new Error 'duck army', null
           @sut.startFlow (@error, @result) => done()
@@ -160,7 +160,7 @@ describe 'FlowDeployer', ->
           expect(@sut.meshbluHttp.message).to.have.been.calledWith
             devices: [@flowUuid]
             payload:
-              from: "meshblu-stop"
+              from: "engine-stop"
 
       describe 'when called and meshblu returns an error', ->
         beforeEach (done) ->

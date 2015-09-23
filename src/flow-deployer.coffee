@@ -1,6 +1,6 @@
 _ = require 'lodash'
-FLOW_START_NODE = 'meshblu-start'
-FLOW_STOP_NODE = 'meshblu-stop'
+FLOW_START_NODE = 'engine-start'
+FLOW_STOP_NODE = 'engine-stop'
 MeshbluConfig = require 'meshblu-config'
 
 class FlowDeployer
