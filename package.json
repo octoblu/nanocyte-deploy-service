@@ -1,6 +1,6 @@
 {
   "name": "nanocyte-deployer",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "description": "Deploy flows to nanocyte",
   "main": "index.js",
   "scripts": {

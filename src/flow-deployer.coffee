@@ -60,7 +60,10 @@ class FlowDeployer
       payload:
         from: FLOW_START_NODE
 
-    @meshbluHttp.message message, callback
+    async.series [
+      async.apply @meshbluHttp.updateDangerously, $set: {online: true}
+      async.apply @meshbluHttp.message, message
+    ], callback
 
   stopFlow: (callback=->) =>
     message =
@@ -68,6 +71,9 @@ class FlowDeployer
       payload:
         from: FLOW_STOP_NODE
 
-    @meshbluHttp.message message, callback
+    async.series [
+      async.apply @meshbluHttp.updateDangerously, $set: {online: false}
+      async.apply @meshbluHttp.message, message
+    ], callback
 
 module.exports = FlowDeployer

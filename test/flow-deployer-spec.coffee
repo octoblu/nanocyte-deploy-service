@@ -161,8 +161,14 @@ describe 'FlowDeployer', ->
     describe 'startFlow', ->
       describe 'when called and there is no errors', ->
         beforeEach (done) ->
+          @sut.meshbluHttp.updateDangerously.yields null
           @sut.meshbluHttp.message.yields null, null
           @sut.startFlow (@error, @result) => done()
+
+        it 'should update meshblu device status', ->
+          expect(@sut.meshbluHttp.updateDangerously).to.have.been.calledWith
+            $set:
+              online: true
 
         it 'should message meshblu with the a flow start message', ->
           expect(@sut.meshbluHttp.message).to.have.been.calledWith
@@ -176,6 +182,7 @@ describe 'FlowDeployer', ->
             payload:
               from: "engine-start"
 
+          @sut.meshbluHttp.updateDangerously.yields null
           @sut.meshbluHttp.message.yields new Error 'duck army', null
           @sut.startFlow (@error, @result) => done()
 
@@ -185,8 +192,14 @@ describe 'FlowDeployer', ->
     describe 'stopFlow', ->
       describe 'when called and there is no error', ->
         beforeEach (done) ->
+          @sut.meshbluHttp.updateDangerously.yields null
           @sut.meshbluHttp.message.yields null, null
           @sut.stopFlow (@error, @result) => done()
+
+        it 'should update the meshblu device with as offline', ->
+          expect(@sut.meshbluHttp.updateDangerously).to.have.been.calledWith
+            $set:
+              online: false
 
         it 'should message meshblu with the a flow stop message', ->
           expect(@sut.meshbluHttp.message).to.have.been.calledWith
@@ -196,6 +209,7 @@ describe 'FlowDeployer', ->
 
       describe 'when called and meshblu returns an error', ->
         beforeEach (done) ->
+          @sut.meshbluHttp.updateDangerously.yields null
           @sut.meshbluHttp.message.yields new Error 'look at meeeeee', null
           @sut.stopFlow (@error, @result) => done()
 
