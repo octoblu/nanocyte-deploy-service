@@ -129,18 +129,33 @@ describe 'FlowDeployer', ->
       beforeEach (done) ->
         @updateMessageHooks =
           $addToSet:
-            'meshblu.messageHooks': { generateAndForwardMeshbluCredentials: true, url: @forwardUrl, method: 'POST' }
+            'meshblu.messageHooks':
+              generateAndForwardMeshbluCredentials: true
+              url: @forwardUrl
+              method: 'POST'
+              name: 'nanocyte-flow-deploy'
+
+        @pullMessageHooks =
+          $pull:
+            'meshblu.messageHooks':
+              name: 'nanocyte-flow-deploy'
 
         @device =
-          uuid: 1,
-          flow: {a: 1, b: 5},
+          uuid: 1
+          flow: {a: 1, b: 5}
           meshblu:
-            messageHooks: [ {generateAndForwardMeshbluCredentials: true, url: 'http://www.neopets.com', method: 'DELETE'} ]
+            messageHooks: [
+              generateAndForwardMeshbluCredentials: true
+              url: 'http://www.neopets.com'
+              method: 'DELETE'
+              name: 'nanocyte-flow-deploy'
+            ]
 
         @sut.meshbluHttp.updateDangerously.yields null, null
         @sut.setupDeviceForwarding @device, (@error, @result) => done()
 
       it "should update a meshblu device with the webhook to wherever it's going", ->
+        expect(@sut.meshbluHttp.updateDangerously).to.have.been.calledWith @flowUuid, @pullMessageHooks
         expect(@sut.meshbluHttp.updateDangerously).to.have.been.calledWith @flowUuid, @updateMessageHooks
 
     describe 'startFlow', ->

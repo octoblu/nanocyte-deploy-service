@@ -1,6 +1,6 @@
 {
   "name": "nanocyte-deployer",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "Deploy flows to nanocyte",
   "main": "index.js",
   "scripts": {
@@ -27,6 +27,7 @@
     "sinon-chai": "^2.8.0"
   },
   "dependencies": {
+    "async": "^1.4.2",
     "coffee-script": "^1.10.0",
     "lodash": "^3.10.1",
     "meshblu-config": "^3.1.0",

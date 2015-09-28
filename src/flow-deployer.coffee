@@ -1,4 +1,5 @@
 _ = require 'lodash'
+async = require 'async'
 FLOW_START_NODE = 'engine-start'
 FLOW_STOP_NODE = 'engine-stop'
 MeshbluConfig = require 'meshblu-config'
@@ -36,15 +37,22 @@ class FlowDeployer
             @setupDeviceForwarding body, callback
 
   setupDeviceForwarding: (device, callback=->) =>
-    @messageHook =
+    messageHook =
       url: @forwardUrl
       method: 'POST'
       generateAndForwardMeshbluCredentials: true
+      name: 'nanocyte-flow-deploy'
 
-    @updateMessageHooks =
-      $addToSet: 'meshblu.messageHooks': @messageHook
+    removeOldMessageHooks =
+      $pull: 'meshblu.messageHooks': {name: messageHook.name}
 
-    @meshbluHttp.updateDangerously @flowUuid, @updateMessageHooks, callback
+    addNewMessageHooks =
+      $addToSet: 'meshblu.messageHooks': messageHook
+
+    async.series [
+      async.apply @meshbluHttp.updateDangerously, @flowUuid, removeOldMessageHooks
+      async.apply @meshbluHttp.updateDangerously, @flowUuid, addNewMessageHooks
+    ], callback
 
   startFlow: (callback=->) =>
     message =
