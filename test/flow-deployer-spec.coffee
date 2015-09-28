@@ -1,16 +1,13 @@
 _ = require 'lodash'
 FlowDeployer = require '../src/flow-deployer'
 
-class ConfigurationSaver
-  save: sinon.stub().yields null
-
 class MeshbluHttp
   constructor: ->
     @updateDangerously = sinon.stub()
     @message = sinon.stub()
 
 describe 'FlowDeployer', ->
-  describe.only 'when constructed with a flow', ->
+  describe 'when constructed with a flow', ->
     beforeEach ->
       @request = get: sinon.stub()
       @flowUuid = 'the-flow-uuid'
@@ -28,7 +25,9 @@ describe 'FlowDeployer', ->
         octobluUrl: 'https://api.octoblu.com'
 
       @configurationGenerator = configure: sinon.stub()
-      @configurationSaver = save: sinon.stub()
+      @configurationSaver =
+        save: sinon.stub()
+        clear: sinon.stub()
 
       @sut = new FlowDeployer options,
         configurationGenerator: @configurationGenerator
@@ -41,6 +40,7 @@ describe 'FlowDeployer', ->
     describe 'when deploy is called', ->
       beforeEach (done)->
         @configurationGenerator.configure.yields null
+        @configurationSaver.clear.yields null
         @configurationSaver.save.yields null
         @sut.setupDeviceForwarding = sinon.stub().yields null
         @sut.deploy  => done()
@@ -85,9 +85,25 @@ describe 'FlowDeployer', ->
       it 'should not give us a result', ->
         expect(@result).to.not.exist
 
+    describe 'when deploy is called and the configuration clear returns an error', ->
+      beforeEach (done)->
+        @configurationGenerator.configure.yields null, { erik_likes_me: true}
+        @configurationSaver.clear.yields new Error 'Erik can never like me enough'
+        @sut.deploy  (@error, @result)=> done()
+
+      it 'should yield and error', ->
+        expect(@error).to.exist
+
+      it 'should not give us a result', ->
+        expect(@result).to.not.exist
+
+      it 'should not call save', ->
+        expect(@configurationSaver.save).to.not.have.been.called
+
     describe 'when deploy is called and the configuration save returns an error', ->
       beforeEach (done)->
         @configurationGenerator.configure.yields null, { erik_likes_me: true}
+        @configurationSaver.clear.yields null
         @configurationSaver.save.yields new Error 'Erik can never like me enough'
         @sut.deploy  (@error, @result)=> done()
 
@@ -100,6 +116,7 @@ describe 'FlowDeployer', ->
     describe 'when deploy is called and the generator and saver actually worked', ->
       beforeEach (done) ->
         @configurationGenerator.configure.yields null, { erik_likes_me: 'more than you know'}
+        @configurationSaver.clear.yields null
         @configurationSaver.save.yields null, {finally_i_am_happy: true}
         @sut.setupDeviceForwarding = sinon.stub().yields null
 

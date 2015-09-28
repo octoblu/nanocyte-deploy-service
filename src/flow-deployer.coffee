@@ -24,13 +24,16 @@ class FlowDeployer
       return callback error if error?
       @configurationGenerator.configure body, @flowToken, (error, flowData) =>
         return callback error if error?
-        @configurationSaver.save
-          flowId: @flowUuid
-          instanceId: @instanceId
-          flowData: flowData
-        , (error) =>
+        @configurationSaver.clear flowId: @flowUuid, (error) =>
           return callback error if error?
-          @setupDeviceForwarding body, callback
+
+          @configurationSaver.save
+            flowId: @flowUuid
+            instanceId: @instanceId
+            flowData: flowData
+          , (error) =>
+            return callback error if error?
+            @setupDeviceForwarding body, callback
 
   setupDeviceForwarding: (device, callback=->) =>
     @messageHook =
