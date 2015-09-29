@@ -21,22 +21,27 @@ class FlowDeployer
         user: @userUuid
         pass: @userToken
 
-    @request.get "#{@octobluUrl}/api/flows/#{@flowUuid}", options, (error, response, body) =>
+    @request.get "#{@octobluUrl}/api/user", options, (error, response, userData) =>
       return callback error if error?
-      @configurationGenerator.configure body, @flowToken, (error, flowData) =>
+
+      @request.get "#{@octobluUrl}/api/flows/#{@flowUuid}", options, (error, response, flowData) =>
         return callback error if error?
-        @configurationSaver.clear flowId: @flowUuid, (error) =>
+
+        @configurationGenerator.configure flowData: flowData, userData: userData, @flowToken, (error, flowData) =>
           return callback error if error?
 
-          @configurationSaver.save
-            flowId: @flowUuid
-            instanceId: @instanceId
-            flowData: flowData
-          , (error) =>
+          @configurationSaver.clear flowId: @flowUuid, (error) =>
             return callback error if error?
-            @setupDeviceForwarding body, callback
 
-  setupDeviceForwarding: (device, callback=->) =>
+            @configurationSaver.save
+              flowId: @flowUuid
+              instanceId: @instanceId
+              flowData: flowData
+            , (error) =>
+              return callback error if error?
+              @setupDeviceForwarding callback
+
+  setupDeviceForwarding: (callback=->) =>
     messageHook =
       url: @forwardUrl
       method: 'POST'
