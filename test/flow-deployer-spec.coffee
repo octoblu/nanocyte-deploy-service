@@ -187,7 +187,7 @@ describe 'FlowDeployer', ->
           @sut.startFlow (@error, @result) => done()
 
         it 'should update meshblu device status', ->
-          expect(@sut.meshbluHttp.updateDangerously).to.have.been.calledWith
+          expect(@sut.meshbluHttp.updateDangerously).to.have.been.calledWith 'the-flow-uuid',
             $set:
               online: true
 
@@ -218,7 +218,7 @@ describe 'FlowDeployer', ->
           @sut.stopFlow (@error, @result) => done()
 
         it 'should update the meshblu device with as offline', ->
-          expect(@sut.meshbluHttp.updateDangerously).to.have.been.calledWith
+          expect(@sut.meshbluHttp.updateDangerously).to.have.been.calledWith 'the-flow-uuid',
             $set:
               online: false
 
