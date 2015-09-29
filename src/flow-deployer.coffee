@@ -15,31 +15,45 @@ class FlowDeployer
     @meshbluHttp = new MeshbluHttp meshbluJSON
 
   deploy: (callback=->) =>
+    @getFlowAndUserData (error, results) =>
+      return callback error if error?
+
+      results.flowToken = @flowToken
+
+      @configurationGenerator.configure results, (error, config) =>
+        return callback error if error?
+
+        @clearAndSaveConfig config, (error) =>
+          return callback error if error?
+
+          @setupDeviceForwarding callback
+
+  clearAndSaveConfig: (config, callback) =>
+    saveOptions =
+      flowId: @flowUuid
+      instanceId: @instanceId
+      flowData: config
+
+    async.series [
+      async.apply @configurationSaver.clear, flowId: @flowUuid
+      async.apply @configurationSaver.save, saveOptions
+    ], callback
+
+  getFlowAndUserData: (callback) =>
+    async.parallel
+      userData: async.apply @_get, "#{@octobluUrl}/api/user"
+      flowData: async.apply @_get, "#{@octobluUrl}/api/flows/#{@flowUuid}"
+    , callback
+
+  _get: (url, callback)=>
     options =
       json: true
       auth:
         user: @userUuid
         pass: @userToken
 
-    @request.get "#{@octobluUrl}/api/user", options, (error, response, userData) =>
-      return callback error if error?
-
-      @request.get "#{@octobluUrl}/api/flows/#{@flowUuid}", options, (error, response, flowData) =>
-        return callback error if error?
-
-        @configurationGenerator.configure flowData: flowData, userData: userData, @flowToken, (error, flowData) =>
-          return callback error if error?
-
-          @configurationSaver.clear flowId: @flowUuid, (error) =>
-            return callback error if error?
-
-            @configurationSaver.save
-              flowId: @flowUuid
-              instanceId: @instanceId
-              flowData: flowData
-            , (error) =>
-              return callback error if error?
-              @setupDeviceForwarding callback
+    @request.get url, options, (error, response, body) =>
+      callback error, body
 
   setupDeviceForwarding: (callback=->) =>
     messageHook =
