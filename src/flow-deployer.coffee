@@ -6,7 +6,7 @@ MeshbluConfig = require 'meshblu-config'
 
 class FlowDeployer
   constructor: (@options, dependencies={}) ->
-    {@flowUuid, @instanceId, @flowToken, @forwardUrl, @userUuid, @userToken, @octobluUrl} = @options
+    {@flowUuid, @instanceId, @flowToken, @forwardUrl, @userUuid, @userToken, @octobluUrl, @deploymentUuid} = @options
     {@configurationSaver, @configurationGenerator, MeshbluHttp, @request} = dependencies
     MeshbluHttp ?= require 'meshblu-http'
     @request ?= require 'request'
@@ -19,6 +19,7 @@ class FlowDeployer
       return callback error if error?
 
       results.flowToken = @flowToken
+      results.deploymentUuid = @deploymentUuid
 
       @configurationGenerator.configure results, (error, config) =>
         return callback error if error?

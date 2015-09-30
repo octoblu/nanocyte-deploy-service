@@ -20,6 +20,7 @@ describe 'FlowDeployer', ->
         userUuid: 'some-user-uuid'
         userToken: 'some-user-token'
         octobluUrl: 'https://api.octoblu.com'
+        deploymentUuid: 'the-deployment-uuid'
 
       @configurationGenerator = configure: sinon.stub()
       @configurationSaver =
@@ -47,6 +48,7 @@ describe 'FlowDeployer', ->
         expect(@configurationGenerator.configure).to.have.been.calledWith
           flowData: { a: 1, b: 5 }
           userData: {api: {}}
+          deploymentUuid: 'the-deployment-uuid'
           flowToken: 'the-flow-token'
 
       it 'should call configuration saver with the flow', ->
