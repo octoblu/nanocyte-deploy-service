@@ -190,6 +190,8 @@ describe 'FlowDeployer', ->
           expect(@sut.meshbluHttp.updateDangerously).to.have.been.calledWith 'the-flow-uuid',
             $set:
               online: true
+              deploying: false
+              stopping: false
 
         it 'should message meshblu with the a flow start message', ->
           expect(@sut.meshbluHttp.message).to.have.been.calledWith
@@ -221,6 +223,8 @@ describe 'FlowDeployer', ->
           expect(@sut.meshbluHttp.updateDangerously).to.have.been.calledWith 'the-flow-uuid',
             $set:
               online: false
+              deploying: false
+              stopping: false
 
         it 'should message meshblu with the a flow stop message', ->
           expect(@sut.meshbluHttp.message).to.have.been.calledWith

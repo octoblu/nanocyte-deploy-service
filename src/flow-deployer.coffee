@@ -80,7 +80,7 @@ class FlowDeployer
         from: FLOW_START_NODE
 
     async.series [
-      async.apply @meshbluHttp.updateDangerously, @flowUuid, $set: {online: true}
+      async.apply @meshbluHttp.updateDangerously, @flowUuid, $set: {online: true, deploying: false, stopping: false}
       async.apply @meshbluHttp.message, message
     ], callback
 
@@ -91,7 +91,7 @@ class FlowDeployer
         from: FLOW_STOP_NODE
 
     async.series [
-      async.apply @meshbluHttp.updateDangerously, @flowUuid, $set: {online: false}
+      async.apply @meshbluHttp.updateDangerously, @flowUuid, $set: {online: false, deploying: false, stopping: false}
       async.apply @meshbluHttp.message, message
     ], callback
 
