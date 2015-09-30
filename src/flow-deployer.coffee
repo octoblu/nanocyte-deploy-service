@@ -29,6 +29,9 @@ class FlowDeployer
 
           @setupDeviceForwarding callback
 
+  destroy: (callback=->) =>
+    @configurationSaver.clear flowId: @flowUuid
+
   clearAndSaveConfig: (config, callback) =>
     saveOptions =
       flowId: @flowUuid
