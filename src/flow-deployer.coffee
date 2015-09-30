@@ -21,26 +21,34 @@ class FlowDeployer
       results.flowToken = @flowToken
       results.deploymentUuid = @deploymentUuid
 
-      @configurationGenerator.configure results, (error, config) =>
+      @configurationGenerator.configure results, (error, config, stopConfig) =>
         return callback error if error?
 
-        @clearAndSaveConfig config, (error) =>
+        @clearAndSaveConfig config: config, stopConfig: stopConfig, (error) =>
           return callback error if error?
 
           @setupDeviceForwarding callback
 
   destroy: (callback=->) =>
-    @configurationSaver.clear flowId: @flowUuid
+    @configurationSaver.stop flowId: @flowUuid
 
-  clearAndSaveConfig: (config, callback) =>
+  clearAndSaveConfig: (options, callback) =>
+    {config, stopConfig} = options
+
     saveOptions =
       flowId: @flowUuid
       instanceId: @instanceId
       flowData: config
 
+    saveStopOptions =
+      flowId: "#{@flowUuid}-stop"
+      instanceId: @instanceId
+      flowData: stopConfig
+
     async.series [
-      async.apply @configurationSaver.clear, flowId: @flowUuid
+      async.apply @configurationSaver.stop, flowId: @flowUuid
       async.apply @configurationSaver.save, saveOptions
+      async.apply @configurationSaver.save, saveStopOptions
     ], callback
 
   getFlowAndUserData: (callback) =>
