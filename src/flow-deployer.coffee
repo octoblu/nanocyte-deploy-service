@@ -107,6 +107,7 @@ class FlowDeployer
       payload:
         from: FLOW_START_NODE
 
+    _.defer @flowStatusMessenger.message, 'start', undefined, workflow: 'flow-runner'
     async.series [
       async.apply @meshbluHttp.updateDangerously, @flowUuid, $set: {online: true, deploying: false, stopping: false}
       async.apply @meshbluHttp.message, message
