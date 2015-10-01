@@ -4,16 +4,17 @@ class FlowStatusMessenger
     {@userUuid, @flowUuid, @workflow, @deploymentUuid, @flowLoggerUuid} = options
 
   message: (state,message,overrides={}) =>
-    {workflow} = overrides
-    workflow ?= @workflow
+    {application} = overrides
+    application ?= 'flow-deploy-service'
+
     @meshbluHttp.message
       devices: [@flowLoggerUuid]
       payload:
-        application: 'flow-deploy-service'
+        application: application
         deploymentUuid: @deploymentUuid
         flowUuid: @flowUuid
         userUuid: @userUuid
-        workflow: workflow
+        workflow: @workflow
         state:    state
         message:  message
 
