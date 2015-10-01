@@ -3,10 +3,12 @@ async = require 'async'
 FLOW_START_NODE = 'engine-start'
 FLOW_STOP_NODE = 'engine-stop'
 MeshbluConfig = require 'meshblu-config'
+FlowStatusMessenger = require './flow-status-messenger'
 
 class FlowDeployer
-  constructor: (@options, dependencies={}) ->
-    {@flowUuid, @instanceId, @flowToken, @forwardUrl, @userUuid, @userToken, @octobluUrl, @deploymentUuid} = @options
+  constructor: (options, dependencies={}) ->
+    {@flowUuid, @instanceId, @flowToken, @forwardUrl, @userUuid, @userToken, @octobluUrl, @deploymentUuid} = options
+    {@flowLoggerUuid} = options
     {@configurationSaver, @configurationGenerator, MeshbluHttp, @request} = dependencies
     MeshbluHttp ?= require 'meshblu-http'
     @request ?= require 'request'
@@ -14,20 +16,34 @@ class FlowDeployer
     meshbluJSON = _.assign meshbluConfig.toJSON(), uuid: @flowUuid, token: @flowToken
     @meshbluHttp = new MeshbluHttp meshbluJSON
 
+    @flowStatusMessenger = new FlowStatusMessenger @meshbluHttp,
+      userUuid: @userUuid
+      flowUuid: @flowUuid
+      workflow: 'flow-start'
+      deploymentUuid: @deploymentUuid
+      flowLoggerUuid: @flowLoggerUuid
+
   deploy: (callback=->) =>
+    @flowStatusMessenger.message 'begin'
     @getFlowAndUserData (error, results) =>
+      @flowStatusMessenger.message 'error', error.message if error?
       return callback error if error?
 
       results.flowToken = @flowToken
       results.deploymentUuid = @deploymentUuid
 
       @configurationGenerator.configure results, (error, config, stopConfig) =>
+        @flowStatusMessenger.message 'error', error.message if error?
         return callback error if error?
 
         @clearAndSaveConfig config: config, stopConfig: stopConfig, (error) =>
+          @flowStatusMessenger.message 'error', error.message if error?
           return callback error if error?
 
-          @setupDeviceForwarding callback
+          @setupDeviceForwarding (error) =>
+            @flowStatusMessenger.message 'error', error.message if error?
+            @flowStatusMessenger.message 'end' unless error?
+            callback error
 
   destroy: (callback=->) =>
     @configurationSaver.stop flowId: @flowUuid, callback

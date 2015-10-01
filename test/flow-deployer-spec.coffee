@@ -1,10 +1,6 @@
 _ = require 'lodash'
 FlowDeployer = require '../src/flow-deployer'
 
-class MeshbluHttp
-  constructor: ->
-    @updateDangerously = sinon.stub()
-    @message = sinon.stub()
 
 describe 'FlowDeployer', ->
   describe 'when constructed with a flow', ->
@@ -21,6 +17,7 @@ describe 'FlowDeployer', ->
         userToken: 'some-user-token'
         octobluUrl: 'https://api.octoblu.com'
         deploymentUuid: 'the-deployment-uuid'
+        flowLoggerUuid: 'flow-logger-uuid'
 
       @configurationGenerator =
         configure: sinon.stub()
@@ -28,6 +25,12 @@ describe 'FlowDeployer', ->
       @configurationSaver =
         save: sinon.stub()
         stop: sinon.stub()
+
+      @meshbluHttp =
+        message:           sinon.stub()
+        updateDangerously: sinon.stub()
+
+      MeshbluHttp = sinon.spy => @meshbluHttp
 
       @sut = new FlowDeployer options,
         configurationGenerator: @configurationGenerator
@@ -45,6 +48,18 @@ describe 'FlowDeployer', ->
         @configurationSaver.save.yields null
         @sut.setupDeviceForwarding = sinon.stub().yields null
         @sut.deploy  => done()
+
+      it 'should message the FLOW_LOGGER_UUID', ->
+        expect(@meshbluHttp.message).to.have.been.calledWith
+          devices: ['flow-logger-uuid']
+          payload:
+            application: 'flow-deploy-service'
+            deploymentUuid: 'the-deployment-uuid'
+            flowUuid: 'the-flow-uuid'
+            userUuid: 'some-user-uuid'
+            workflow: 'flow-start'
+            state:    'begin'
+            message:  undefined
 
       it 'should call configuration generator with the flow', ->
         expect(@configurationGenerator.configure).to.have.been.calledWith
@@ -77,6 +92,18 @@ describe 'FlowDeployer', ->
         expect(@request.get).to.have.been.calledWith 'https://api.octoblu.com/api/flows/the-flow-uuid', options
         expect(@request.get).to.have.been.calledWith 'https://api.octoblu.com/api/user', options
 
+      it 'should message the FLOW_LOGGER_UUID', ->
+        expect(@meshbluHttp.message).to.have.been.calledWith
+          devices: ['flow-logger-uuid']
+          payload:
+            application: 'flow-deploy-service'
+            deploymentUuid: 'the-deployment-uuid'
+            flowUuid: 'the-flow-uuid'
+            userUuid: 'some-user-uuid'
+            workflow: 'flow-start'
+            state:    'end'
+            message:  undefined
+
     describe 'when deploy is called and user GET errored', ->
       beforeEach (done) ->
         userUrl = 'https://api.octoblu.com/api/user'
@@ -91,6 +118,18 @@ describe 'FlowDeployer', ->
 
       it 'should not give us a result', ->
         expect(@result).to.not.exist
+
+      it 'should message the FLOW_LOGGER_UUID', ->
+        expect(@meshbluHttp.message).to.have.been.calledWith
+          devices: ['flow-logger-uuid']
+          payload:
+            application: 'flow-deploy-service'
+            deploymentUuid: 'the-deployment-uuid'
+            flowUuid: 'the-flow-uuid'
+            userUuid: 'some-user-uuid'
+            workflow: 'flow-start'
+            state:    'error'
+            message:  'whoa, thats not a user'
 
     describe 'when deploy is called and flow get errored', ->
       beforeEach (done) ->
@@ -110,6 +149,18 @@ describe 'FlowDeployer', ->
       it 'should not give us a result', ->
         expect(@result).to.not.exist
 
+      it 'should message the FLOW_LOGGER_UUID', ->
+        expect(@meshbluHttp.message).to.have.been.calledWith
+          devices: ['flow-logger-uuid']
+          payload:
+            application: 'flow-deploy-service'
+            deploymentUuid: 'the-deployment-uuid'
+            flowUuid: 'the-flow-uuid'
+            userUuid: 'some-user-uuid'
+            workflow: 'flow-start'
+            state:    'error'
+            message:  'whoa, shoots bad'
+
     describe 'when deploy is called and the configuration generator returns an error', ->
       beforeEach (done)->
         @configurationGenerator.configure.yields new Error 'Oh noes'
@@ -120,6 +171,18 @@ describe 'FlowDeployer', ->
 
       it 'should not give us a result', ->
         expect(@result).to.not.exist
+
+      it 'should message the FLOW_LOGGER_UUID', ->
+        expect(@meshbluHttp.message).to.have.been.calledWith
+          devices: ['flow-logger-uuid']
+          payload:
+            application: 'flow-deploy-service'
+            deploymentUuid: 'the-deployment-uuid'
+            flowUuid: 'the-flow-uuid'
+            userUuid: 'some-user-uuid'
+            workflow: 'flow-start'
+            state:    'error'
+            message:  'Oh noes'
 
     describe 'when deploy is called and the configuration stop returns an error', ->
       beforeEach (done)->
@@ -136,6 +199,18 @@ describe 'FlowDeployer', ->
       it 'should not call save', ->
         expect(@configurationSaver.save).to.not.have.been.called
 
+      it 'should message the FLOW_LOGGER_UUID', ->
+        expect(@meshbluHttp.message).to.have.been.calledWith
+          devices: ['flow-logger-uuid']
+          payload:
+            application: 'flow-deploy-service'
+            deploymentUuid: 'the-deployment-uuid'
+            flowUuid: 'the-flow-uuid'
+            userUuid: 'some-user-uuid'
+            workflow: 'flow-start'
+            state:    'error'
+            message:  'Erik can never like me enough'
+
     describe 'when deploy is called and the configuration save returns an error', ->
       beforeEach (done)->
         @configurationGenerator.configure.yields null, { erik_likes_me: true}
@@ -148,6 +223,18 @@ describe 'FlowDeployer', ->
 
       it 'should not give us a result', ->
         expect(@result).to.not.exist
+
+      it 'should message the FLOW_LOGGER_UUID', ->
+        expect(@meshbluHttp.message).to.have.been.calledWith
+          devices: ['flow-logger-uuid']
+          payload:
+            application: 'flow-deploy-service'
+            deploymentUuid: 'the-deployment-uuid'
+            flowUuid: 'the-flow-uuid'
+            userUuid: 'some-user-uuid'
+            workflow: 'flow-start'
+            state:    'error'
+            message:  'Erik can never like me enough'
 
     describe 'when deploy is called and the generator and saver actually worked', ->
       beforeEach (done) ->
@@ -187,29 +274,29 @@ describe 'FlowDeployer', ->
               name: 'nanocyte-flow-deploy'
             ]
 
-        @sut.meshbluHttp.updateDangerously.yields null, null
+        @meshbluHttp.updateDangerously.yields null, null
         @sut.setupDeviceForwarding (@error, @result) => done()
 
       it "should update a meshblu device with the webhook to wherever it's going", ->
-        expect(@sut.meshbluHttp.updateDangerously).to.have.been.calledWith 'the-flow-uuid', @pullMessageHooks
-        expect(@sut.meshbluHttp.updateDangerously).to.have.been.calledWith 'the-flow-uuid', @updateMessageHooks
+        expect(@meshbluHttp.updateDangerously).to.have.been.calledWith 'the-flow-uuid', @pullMessageHooks
+        expect(@meshbluHttp.updateDangerously).to.have.been.calledWith 'the-flow-uuid', @updateMessageHooks
 
     describe 'startFlow', ->
       describe 'when called and there is no errors', ->
         beforeEach (done) ->
-          @sut.meshbluHttp.updateDangerously.yields null
-          @sut.meshbluHttp.message.yields null, null
+          @meshbluHttp.updateDangerously.yields null
+          @meshbluHttp.message.yields null, null
           @sut.startFlow (@error, @result) => done()
 
         it 'should update meshblu device status', ->
-          expect(@sut.meshbluHttp.updateDangerously).to.have.been.calledWith 'the-flow-uuid',
+          expect(@meshbluHttp.updateDangerously).to.have.been.calledWith 'the-flow-uuid',
             $set:
               online: true
               deploying: false
               stopping: false
 
         it 'should message meshblu with the a flow start message', ->
-          expect(@sut.meshbluHttp.message).to.have.been.calledWith
+          expect(@meshbluHttp.message).to.have.been.calledWith
             devices: ['the-flow-uuid']
             payload:
               from: "engine-start"
@@ -220,8 +307,8 @@ describe 'FlowDeployer', ->
             payload:
               from: "engine-start"
 
-          @sut.meshbluHttp.updateDangerously.yields null
-          @sut.meshbluHttp.message.yields new Error 'duck army', null
+          @meshbluHttp.updateDangerously.yields null
+          @meshbluHttp.message.yields new Error 'duck army', null
           @sut.startFlow (@error, @result) => done()
 
         it 'should call the callback with the error', ->
@@ -230,12 +317,12 @@ describe 'FlowDeployer', ->
     describe 'stopFlow', ->
       describe 'when called and there is no error', ->
         beforeEach (done) ->
-          @sut.meshbluHttp.updateDangerously.yields null
-          @sut.meshbluHttp.message.yields null, null
+          @meshbluHttp.updateDangerously.yields null
+          @meshbluHttp.message.yields null, null
           @sut.stopFlow (@error, @result) => done()
 
         it 'should update the meshblu device with as offline', ->
-          expect(@sut.meshbluHttp.updateDangerously).to.have.been.calledWith 'the-flow-uuid',
+          expect(@meshbluHttp.updateDangerously).to.have.been.calledWith 'the-flow-uuid',
             $set:
               online: false
               deploying: false
@@ -249,8 +336,8 @@ describe 'FlowDeployer', ->
 
       describe 'when called and meshblu returns an error', ->
         beforeEach (done) ->
-          @sut.meshbluHttp.updateDangerously.yields null
-          @sut.meshbluHttp.message.yields new Error 'look at meeeeee', null
+          @meshbluHttp.updateDangerously.yields null
+          @meshbluHttp.message.yields new Error 'look at meeeeee', null
           @sut.stopFlow (@error, @result) => done()
 
         it 'should call the callback with the error', ->
