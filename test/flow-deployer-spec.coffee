@@ -301,6 +301,11 @@ describe 'FlowDeployer', ->
             payload:
               from: "engine-start"
 
+        it 'should message meshblu with a subscribe:pulse message', ->
+          expect(@meshbluHttp.message).to.have.been.calledWith
+            devices: ['the-flow-uuid']
+            topic: 'subscribe:pulse'
+
       describe 'when called and meshblu returns an error', ->
         beforeEach (done) ->
           @message =

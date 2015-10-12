@@ -102,15 +102,20 @@ class FlowDeployer
     ], callback
 
   startFlow: (callback=->) =>
-    message =
+    onStartMessage =
       devices: [@flowUuid]
       payload:
         from: FLOW_START_NODE
 
+    subscribePulseMessage =
+      devices: [@flowUuid]
+      topic: 'subscribe:pulse'
+
     _.defer @flowStatusMessenger.message, 'begin', undefined, application: 'flow-runner'
     async.series [
       async.apply @meshbluHttp.updateDangerously, @flowUuid, $set: {online: true, deploying: false, stopping: false}
-      async.apply @meshbluHttp.message, message
+      async.apply @meshbluHttp.message, subscribePulseMessage
+      async.apply @meshbluHttp.message, onStartMessage
     ], callback
 
   stopFlow: (callback=->) =>

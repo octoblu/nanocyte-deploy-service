@@ -1,7 +1,11 @@
 {
   "name": "nanocyte-deployer",
-  "version": "1.13.4",
+  "version": "1.13.5",
   "description": "Deploy flows to nanocyte",
+  "engines": {
+    "node": ">=4.0.0"
+  },
+  "engineStrict": true,
   "main": "index.js",
   "scripts": {
     "test": "istanbul cover _mocha -- -R spec"
@@ -23,6 +27,7 @@
     "istanbul": "^0.3.20",
     "mocha": "^2.3.3",
     "mocha-istanbul": "^0.2.0",
+    "semver": "^5.0.3",
     "sinon": "^1.17.0",
     "sinon-chai": "^2.8.0"
   },
