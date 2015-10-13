@@ -40,7 +40,7 @@ class FlowDeployer
           @flowStatusMessenger.message 'error', error.message if error?
           return callback error if error?
 
-          @setupDeviceForwarding (error) =>
+          @setupDevice results.flowData, (error) =>
             @flowStatusMessenger.message 'error', error.message if error?
             @flowStatusMessenger.message 'end' unless error?
             callback error
@@ -83,6 +83,11 @@ class FlowDeployer
     @request.get url, options, (error, response, body) =>
       callback error, body
 
+  setupDevice: (flow, callback=->) =>
+    @setupDeviceForwarding (error, result) =>
+      return callback(error) if error?
+      @setupMessageSchema flow.nodes, callback
+
   setupDeviceForwarding: (callback=->) =>
     messageHook =
       url: @forwardUrl
@@ -100,6 +105,33 @@ class FlowDeployer
       async.apply @meshbluHttp.updateDangerously, @flowUuid, removeOldMessageHooks
       async.apply @meshbluHttp.updateDangerously, @flowUuid, addNewMessageHooks
     ], callback
+
+  setupMessageSchema: (nodes, callback=->) =>
+    triggers = _.filter nodes, class: 'trigger'
+
+    messageSchema =
+      type: "object"
+      properties:
+        from:
+          type: "string"
+          title: 'Trigger'
+          required: true
+          enum: _.pluck(triggers, 'id')
+
+    messageFormSchema = [
+      key: "from"
+      titleMap: @buildFormTitleMap triggers
+    ]
+
+    setMessageSchema =
+      $set : { 'messageSchema': messageSchema, 'messageFormSchema': messageFormSchema }
+
+    @meshbluHttp.updateDangerously @flowUuid, setMessageSchema, callback
+
+  buildFormTitleMap: (triggers) =>
+    _.transform triggers, (result, trigger) ->
+      result[trigger.id] = trigger.name + ' (' + trigger.id.split('-')[0] + ')'
+    , {}
 
   startFlow: (callback=->) =>
     onStartMessage =

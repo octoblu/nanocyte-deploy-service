@@ -46,7 +46,7 @@ describe 'FlowDeployer', ->
         @configurationGenerator.configure.yields null, {some: 'thing'}, {stop: 'config'}
         @configurationSaver.stop.yields null
         @configurationSaver.save.yields null
-        @sut.setupDeviceForwarding = sinon.stub().yields null
+        @sut.setupDevice = sinon.stub().yields null
         @sut.deploy  => done()
 
       it 'should message the FLOW_LOGGER_UUID', ->
@@ -241,12 +241,12 @@ describe 'FlowDeployer', ->
         @configurationGenerator.configure.yields null, { erik_likes_me: 'more than you know'}
         @configurationSaver.stop.yields null
         @configurationSaver.save.yields null, {finally_i_am_happy: true}
-        @sut.setupDeviceForwarding = sinon.stub().yields null
+        @sut.setupDevice = sinon.stub().yields null
 
         @sut.deploy  (@error, @result) => done()
 
       it 'should call setupDeviceForwarding', ->
-        expect(@sut.setupDeviceForwarding).to.have.been.called
+        expect(@sut.setupDevice).to.have.been.called
 
     describe 'setupDeviceForwarding', ->
       beforeEach (done) ->
@@ -280,6 +280,50 @@ describe 'FlowDeployer', ->
       it "should update a meshblu device with the webhook to wherever it's going", ->
         expect(@meshbluHttp.updateDangerously).to.have.been.calledWith 'the-flow-uuid', @pullMessageHooks
         expect(@meshbluHttp.updateDangerously).to.have.been.calledWith 'the-flow-uuid', @updateMessageHooks
+
+    describe 'setupMessageSchema', ->
+      beforeEach (done) ->
+        @updateDevice = $set:
+          messageSchema:
+            type: "object"
+            properties:
+              from:
+                type: "string"
+                title: 'Trigger'
+                required: true
+                enum: [ 'a', 'c' ]
+
+          messageFormSchema: [
+            key: "from"
+            titleMap: {
+              'a' : 'multiply (a)'
+              'c' : 'rabbits (c)'
+            }
+          ]
+
+        nodes = [
+          {
+            class: 'trigger'
+            id: 'a'
+            name: 'multiply'
+          },
+          {
+            class: 'not-a-trigger'
+            id: 'b'
+            name: 'like'
+          },
+          {
+            class: 'trigger'
+            id: 'c'
+            name: 'rabbits'
+          }
+        ]
+
+        @sut.meshbluHttp.updateDangerously.yields null, null
+        @sut.setupMessageSchema nodes, (@error, @result) => done()
+
+      it "should update a meshblu device with message schema for triggers", ->
+        expect(@sut.meshbluHttp.updateDangerously).to.have.been.calledWith 'the-flow-uuid', @updateDevice
 
     describe 'startFlow', ->
       describe 'when called and there is no errors', ->
