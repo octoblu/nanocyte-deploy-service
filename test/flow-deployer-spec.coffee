@@ -253,7 +253,7 @@ describe 'FlowDeployer', ->
         @updateMessageHooks =
           $addToSet:
             'meshblu.messageHooks':
-              generateAndForwardMeshbluCredentials: true
+              signRequest: true
               url: 'http://www.zombo.com'
               method: 'POST'
               name: 'nanocyte-flow-deploy'

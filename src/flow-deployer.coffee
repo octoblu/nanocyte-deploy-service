@@ -92,7 +92,7 @@ class FlowDeployer
     messageHook =
       url: @forwardUrl
       method: 'POST'
-      generateAndForwardMeshbluCredentials: true
+      signRequest: true
       name: 'nanocyte-flow-deploy'
 
     removeOldMessageHooks =
