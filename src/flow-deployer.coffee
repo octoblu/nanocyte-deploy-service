@@ -86,7 +86,12 @@ class FlowDeployer
   setupDevice: (flow, callback=->) =>
     @setupDeviceForwarding (error, result) =>
       return callback(error) if error?
-      @setupMessageSchema flow.nodes, callback
+      @setupMessageSchema flow.nodes (error, result) =>
+        return callback(error) if error?
+        @addFlowToDevice flow, callback
+
+  addFlowToDevice:(flow, callback) =>
+    @meshbluHttp.updateDangerously @flowUuid, $set: flow: flow, callback
 
   setupDeviceForwarding: (callback=->) =>
     messageHook =
