@@ -17,5 +17,6 @@ class FlowStatusMessenger
         workflow: @workflow
         state:    state
         message:  message
+    , =>
 
 module.exports = FlowStatusMessenger
