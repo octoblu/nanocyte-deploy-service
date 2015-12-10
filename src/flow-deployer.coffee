@@ -86,7 +86,7 @@ class FlowDeployer
   setupDevice: (flow, callback=->) =>
     @setupDeviceForwarding (error, result) =>
       return callback(error) if error?
-      @setupMessageSchema flow.nodes (error, result) =>
+      @setupMessageSchema flow.nodes, (error, result) =>
         return callback(error) if error?
         @addFlowToDevice flow, callback
 
