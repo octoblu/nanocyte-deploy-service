@@ -11,6 +11,7 @@ class FlowStatusMessenger
       devices: [@flowLoggerUuid]
       payload:
         application: application
+        date: Date.now()
         deploymentUuid: @deploymentUuid
         flowUuid: @flowUuid
         userUuid: @userUuid

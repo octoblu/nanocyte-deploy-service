@@ -50,7 +50,11 @@ describe 'FlowDeployer', ->
         @sut.deploy  => done()
 
       it 'should message the FLOW_LOGGER_UUID', ->
-        expect(@meshbluHttp.message).to.have.been.calledWith
+        expect(@meshbluHttp.message).to.have.been.called
+        firstArg = @meshbluHttp.message.firstCall.args[0]
+        delete firstArg.payload.date
+
+        expect(firstArg).to.deep.equal
           devices: ['flow-logger-uuid']
           payload:
             application: 'flow-deploy-service'
@@ -93,7 +97,11 @@ describe 'FlowDeployer', ->
         expect(@request.get).to.have.been.calledWith 'https://api.octoblu.com/api/user', options
 
       it 'should message the FLOW_LOGGER_UUID', ->
-        expect(@meshbluHttp.message).to.have.been.calledWith
+        expect(@meshbluHttp.message).to.have.been.called
+        firstArg = @meshbluHttp.message.secondCall.args[0]
+        delete firstArg.payload.date
+
+        expect(firstArg).to.deep.equal
           devices: ['flow-logger-uuid']
           payload:
             application: 'flow-deploy-service'
@@ -120,7 +128,11 @@ describe 'FlowDeployer', ->
         expect(@result).to.not.exist
 
       it 'should message the FLOW_LOGGER_UUID', ->
-        expect(@meshbluHttp.message).to.have.been.calledWith
+        expect(@meshbluHttp.message).to.have.been.calledTwice
+        firstArg = @meshbluHttp.message.secondCall.args[0]
+        delete firstArg.payload.date
+
+        expect(firstArg).to.deep.equal
           devices: ['flow-logger-uuid']
           payload:
             application: 'flow-deploy-service'
@@ -150,7 +162,11 @@ describe 'FlowDeployer', ->
         expect(@result).to.not.exist
 
       it 'should message the FLOW_LOGGER_UUID', ->
-        expect(@meshbluHttp.message).to.have.been.calledWith
+        expect(@meshbluHttp.message).to.have.been.calledTwice
+        firstArg = @meshbluHttp.message.secondCall.args[0]
+        delete firstArg.payload.date
+
+        expect(firstArg).to.deep.equal
           devices: ['flow-logger-uuid']
           payload:
             application: 'flow-deploy-service'
@@ -173,7 +189,11 @@ describe 'FlowDeployer', ->
         expect(@result).to.not.exist
 
       it 'should message the FLOW_LOGGER_UUID', ->
-        expect(@meshbluHttp.message).to.have.been.calledWith
+        expect(@meshbluHttp.message).to.have.been.calledTwice
+        firstArg = @meshbluHttp.message.secondCall.args[0]
+        delete firstArg.payload.date
+
+        expect(firstArg).to.deep.equal
           devices: ['flow-logger-uuid']
           payload:
             application: 'flow-deploy-service'
@@ -200,7 +220,11 @@ describe 'FlowDeployer', ->
         expect(@configurationSaver.save).to.not.have.been.called
 
       it 'should message the FLOW_LOGGER_UUID', ->
-        expect(@meshbluHttp.message).to.have.been.calledWith
+        expect(@meshbluHttp.message).to.have.been.calledTwice
+        firstArg = @meshbluHttp.message.secondCall.args[0]
+        delete firstArg.payload.date
+
+        expect(firstArg).to.deep.equal
           devices: ['flow-logger-uuid']
           payload:
             application: 'flow-deploy-service'
@@ -225,7 +249,11 @@ describe 'FlowDeployer', ->
         expect(@result).to.not.exist
 
       it 'should message the FLOW_LOGGER_UUID', ->
-        expect(@meshbluHttp.message).to.have.been.calledWith
+        expect(@meshbluHttp.message).to.have.been.calledTwice
+        firstArg = @meshbluHttp.message.secondCall.args[0]
+        delete firstArg.payload.date
+
+        expect(firstArg).to.deep.equal
           devices: ['flow-logger-uuid']
           payload:
             application: 'flow-deploy-service'
