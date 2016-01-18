@@ -280,14 +280,17 @@ describe 'FlowDeployer', ->
       beforeEach (done) ->
         @updateMessageHooks =
           $addToSet:
-            'meshblu.messageHooks':
+            'meshblu.forwarders.broadcast':
               signRequest: true
               url: 'http://www.zombo.com'
               method: 'POST'
               name: 'nanocyte-flow-deploy'
+              type: 'webhook'
 
         @pullMessageHooks =
           $pull:
+            'meshblu.forwarders.broadcast':
+              name: 'nanocyte-flow-deploy'
             'meshblu.messageHooks':
               name: 'nanocyte-flow-deploy'
 

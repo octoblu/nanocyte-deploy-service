@@ -99,12 +99,15 @@ class FlowDeployer
       method: 'POST'
       signRequest: true
       name: 'nanocyte-flow-deploy'
+      type: 'webhook'
 
     removeOldMessageHooks =
-      $pull: 'meshblu.messageHooks': {name: messageHook.name}
+      $pull:
+        'meshblu.forwarders.broadcast': {name: messageHook.name}
+        'meshblu.messageHooks': {name: messageHook.name}
 
     addNewMessageHooks =
-      $addToSet: 'meshblu.messageHooks': messageHook
+      $addToSet: 'meshblu.forwarders.broadcast': messageHook
 
     async.series [
       async.apply @meshbluHttp.updateDangerously, @flowUuid, removeOldMessageHooks
