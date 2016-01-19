@@ -104,10 +104,13 @@ class FlowDeployer
     removeOldMessageHooks =
       $pull:
         'meshblu.forwarders.broadcast': {name: messageHook.name}
+        'meshblu.forwarders.received': {name: messageHook.name}
         'meshblu.messageHooks': {name: messageHook.name}
 
     addNewMessageHooks =
-      $addToSet: 'meshblu.forwarders.broadcast': messageHook
+      $addToSet:
+        'meshblu.forwarders.broadcast': messageHook
+        'meshblu.forwarders.received': messageHook
 
     async.series [
       async.apply @meshbluHttp.updateDangerously, @flowUuid, removeOldMessageHooks

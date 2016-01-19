@@ -286,10 +286,18 @@ describe 'FlowDeployer', ->
               method: 'POST'
               name: 'nanocyte-flow-deploy'
               type: 'webhook'
+            'meshblu.forwarders.received':
+              signRequest: true
+              url: 'http://www.zombo.com'
+              method: 'POST'
+              name: 'nanocyte-flow-deploy'
+              type: 'webhook'
 
         @pullMessageHooks =
           $pull:
             'meshblu.forwarders.broadcast':
+              name: 'nanocyte-flow-deploy'
+            'meshblu.forwarders.received':
               name: 'nanocyte-flow-deploy'
             'meshblu.messageHooks':
               name: 'nanocyte-flow-deploy'
