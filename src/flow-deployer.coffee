@@ -3,6 +3,7 @@ async = require 'async'
 FLOW_START_NODE = 'engine-start'
 FLOW_STOP_NODE = 'engine-stop'
 MeshbluConfig = require 'meshblu-config'
+debug = require('debug')('nanocyte-deployer:flow-deployer')
 FlowStatusMessenger = require './flow-status-messenger'
 
 class FlowDeployer
@@ -149,10 +150,12 @@ class FlowDeployer
     async.forEachOf flowConfig['subscribe-devices'].config, @createSubscriptionsForType, callback
 
   createSubscriptionsForType: (uuids, type, callback) =>
+    debug 'createSubscriptions', {uuids, type}
     async.each uuids, ((uuid, cb) => @createSubscriptionForType uuid, type, cb), callback
 
   createSubscriptionForType: (emitterUuid, type, callback) =>
     subscriberUuid = @flowUuid
+    debug '@meshbluHttp.createSubscription', {subscriberUuid, emitterUuid, type}
     @meshbluHttp.createSubscription {subscriberUuid, emitterUuid, type}, callback
 
   startFlow: (callback=->) =>
