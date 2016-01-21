@@ -40,7 +40,7 @@ class FlowDeployer
           @flowStatusMessenger.message 'error', error.message if error?
           return callback error if error?
 
-          @setupDevice results.flowData, (error) =>
+          @setupDevice results.flowData, config, (error) =>
             @flowStatusMessenger.message 'error', error.message if error?
             @flowStatusMessenger.message 'end' unless error?
             callback error
@@ -83,12 +83,13 @@ class FlowDeployer
     @request.get url, options, (error, response, body) =>
       callback error, body
 
-  setupDevice: (flow, callback=->) =>
-    @setupDeviceForwarding (error, result) =>
-      return callback(error) if error?
-      @setupMessageSchema flow.nodes, (error, result) =>
+  setupDevice: (flow, flowConfig, callback=->) =>
+    @createSubscriptions flowConfig, (error) =>
+      @setupDeviceForwarding (error, result) =>
         return callback(error) if error?
-        @addFlowToDevice flow, callback
+        @setupMessageSchema flow.nodes, (error, result) =>
+          return callback(error) if error?
+          @addFlowToDevice flow, callback
 
   addFlowToDevice:(flow, callback) =>
     @meshbluHttp.updateDangerously @flowUuid, $set: flow: flow, callback
@@ -143,6 +144,16 @@ class FlowDeployer
     _.transform triggers, (result, trigger) ->
       result[trigger.id] = trigger.name + ' (' + trigger.id.split('-')[0] + ')'
     , {}
+
+  createSubscriptions: (flowConfig, callback) =>
+    async.forEachOf flowConfig['subscribe-devices'].config, @createSubscriptionsForType, callback
+
+  createSubscriptionsForType: (uuids, type, callback) =>
+    async.each uuids, ((uuid, cb) => @createSubscriptionForType uuid, type, cb), callback
+
+  createSubscriptionForType: (emitterUuid, type, callback) =>
+    subscriberUuid = @flowUuid
+    @meshbluHttp.createSubscription {subscriberUuid, emitterUuid, type}, callback
 
   startFlow: (callback=->) =>
     onStartMessage =

@@ -29,6 +29,7 @@ describe 'FlowDeployer', ->
       @meshbluHttp =
         message:           sinon.stub()
         updateDangerously: sinon.stub()
+        createSubscription: sinon.stub()
 
       MeshbluHttp = sinon.spy => @meshbluHttp
 
@@ -43,7 +44,13 @@ describe 'FlowDeployer', ->
 
     describe 'when deploy is called', ->
       beforeEach (done)->
-        @configurationGenerator.configure.yields null, {some: 'thing'}, {stop: 'config'}
+        flowConfig =
+          'some': 'thing'
+          'subscribe-devices':
+            config:
+              broadcast: ['subscribe-to-this-uuid']
+
+        @configurationGenerator.configure.yields null, flowConfig, {stop: 'config'}
         @configurationSaver.stop.yields null
         @configurationSaver.save.yields null
         @sut.setupDevice = sinon.stub().yields null
@@ -77,7 +84,10 @@ describe 'FlowDeployer', ->
           flowId: 'the-flow-uuid'
           instanceId: 'an-instance-id'
           flowData:
-            some: 'thing'
+            'some': 'thing'
+            'subscribe-devices':
+              config:
+                broadcast: ['subscribe-to-this-uuid']
         )
         expect(@configurationSaver.save).to.have.been.calledWith(
           flowId: 'the-flow-uuid-stop'
@@ -275,6 +285,22 @@ describe 'FlowDeployer', ->
 
       it 'should call setupDeviceForwarding', ->
         expect(@sut.setupDevice).to.have.been.called
+
+
+    describe 'createSubscriptions', ->
+      beforeEach (done) ->
+        @meshbluHttp.createSubscription.yields null
+        flowConfig =
+          'subscribe-devices':
+            config:
+              broadcast: ['subscribe-to-this-uuid']
+        @sut.createSubscriptions flowConfig, done
+
+      it "should create the subscription to the device's", ->
+        subscriberUuid = 'the-flow-uuid'
+        emitterUuid = 'subscribe-to-this-uuid'
+        type = 'broadcast'
+        expect(@meshbluHttp.createSubscription).to.have.been.calledWith {subscriberUuid, emitterUuid, type}
 
     describe 'setupDeviceForwarding', ->
       beforeEach (done) ->
