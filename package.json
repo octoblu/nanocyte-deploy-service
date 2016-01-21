@@ -1,6 +1,6 @@
 {
   "name": "nanocyte-deployer",
-  "version": "1.16.3",
+  "version": "1.16.4",
   "description": "Deploy flows to nanocyte",
   "engines": {
     "node": ">=4.0.0"
@@ -37,7 +37,7 @@
     "debug": "^2.2.0",
     "lodash": "^3.10.1",
     "meshblu-config": "^3.1.0",
-    "meshblu-http": "^3.4.1",
+    "meshblu-http": "^5.0.2",
     "request": "^2.62.0"
   }
 }

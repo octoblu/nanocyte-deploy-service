@@ -86,6 +86,7 @@ class FlowDeployer
 
   setupDevice: (flow, flowConfig, callback=->) =>
     @createSubscriptions flowConfig, (error) =>
+      return callback(error) if error?
       @setupDeviceForwarding (error, result) =>
         return callback(error) if error?
         @setupMessageSchema flow.nodes, (error, result) =>
