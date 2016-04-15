@@ -85,13 +85,13 @@ class FlowDeployer
       callback error, body
 
   setupDevice: (flow, flowConfig, callback=->) =>
-    @createSubscriptions flowConfig, (error) =>
-      return callback(error) if error?
-      @setupDeviceForwarding (error, result) =>
-        return callback(error) if error?
-        @setupMessageSchema flow.nodes, (error, result) =>
-          return callback(error) if error?
-          @addFlowToDevice flow, callback
+    async.series [
+      async.apply @createSelfSubscriptions
+      async.apply @createSubscriptions, flowConfig
+      async.apply @setupDeviceForwarding
+      async.apply @setupMessageSchema, flow.nodes
+      async.apply @addFlowToDevice, flow
+    ], callback
 
   addFlowToDevice:(flow, callback) =>
     @meshbluHttp.updateDangerously @flowUuid, $set: flow: flow, callback
@@ -109,11 +109,13 @@ class FlowDeployer
         'meshblu.forwarders.broadcast': {name: messageHook.name}
         'meshblu.forwarders.received': {name: messageHook.name}
         'meshblu.messageHooks': {name: messageHook.name}
+        'meshblu.forwarders.broadcast.received': {name: messageHook.name}
+        'meshblu.forwarders.message.received': {name: messageHook.name}
 
     addNewMessageHooks =
       $addToSet:
-        'meshblu.forwarders.broadcast': messageHook
-        'meshblu.forwarders.received': messageHook
+        'meshblu.forwarders.broadcast.received': messageHook
+        'meshblu.forwarders.message.received': messageHook
 
     async.series [
       async.apply @meshbluHttp.updateDangerously, @flowUuid, removeOldMessageHooks
@@ -124,16 +126,16 @@ class FlowDeployer
     triggers = _.filter nodes, class: 'trigger'
 
     messageSchema =
-      type: "object"
+      type: 'object'
       properties:
         from:
-          type: "string"
+          type: 'string'
           title: 'Trigger'
           required: true
           enum: _.pluck(triggers, 'id')
 
     messageFormSchema = [
-      key: "from"
+      key: 'from'
       titleMap: @buildFormTitleMap triggers
     ]
 
@@ -144,8 +146,16 @@ class FlowDeployer
 
   buildFormTitleMap: (triggers) =>
     _.transform triggers, (result, trigger) ->
-      result[trigger.id] = trigger.name + ' (' + trigger.id.split('-')[0] + ')'
+      triggerId = _.first trigger.id.split /-/
+      result[trigger.id] = "#{trigger.name} (#{triggerId})"
     , {}
+
+  createSelfSubscriptions: (flowConfig, callback) =>
+    subscriptions =
+      'broadcast.received': [@flowUuid]
+      'message.received': [@flowUuid]
+
+    async.forEachOf subscriptions, @createSubscriptionsForType, callback
 
   createSubscriptions: (flowConfig, callback) =>
     async.forEachOf flowConfig['subscribe-devices'].config, @createSubscriptionsForType, callback

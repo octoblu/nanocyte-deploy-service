@@ -48,7 +48,7 @@ describe 'FlowDeployer', ->
           'some': 'thing'
           'subscribe-devices':
             config:
-              broadcast: ['subscribe-to-this-uuid']
+              'broadcast.sent': ['subscribe-to-this-uuid']
 
         @configurationGenerator.configure.yields null, flowConfig, {stop: 'config'}
         @configurationSaver.stop.yields null
@@ -87,7 +87,7 @@ describe 'FlowDeployer', ->
             'some': 'thing'
             'subscribe-devices':
               config:
-                broadcast: ['subscribe-to-this-uuid']
+                'broadcast.sent': ['subscribe-to-this-uuid']
         )
         expect(@configurationSaver.save).to.have.been.calledWith(
           flowId: 'the-flow-uuid-stop'
@@ -293,26 +293,26 @@ describe 'FlowDeployer', ->
         flowConfig =
           'subscribe-devices':
             config:
-              broadcast: ['subscribe-to-this-uuid']
+              'broadcast.sent': ['subscribe-to-this-uuid']
         @sut.createSubscriptions flowConfig, done
 
       it "should create the subscription to the device's", ->
         subscriberUuid = 'the-flow-uuid'
         emitterUuid = 'subscribe-to-this-uuid'
-        type = 'broadcast'
+        type = 'broadcast.sent'
         expect(@meshbluHttp.createSubscription).to.have.been.calledWith {subscriberUuid, emitterUuid, type}
 
     describe 'setupDeviceForwarding', ->
       beforeEach (done) ->
         @updateMessageHooks =
           $addToSet:
-            'meshblu.forwarders.broadcast':
+            'meshblu.forwarders.broadcast.received':
               signRequest: true
               url: 'http://www.zombo.com'
               method: 'POST'
               name: 'nanocyte-flow-deploy'
               type: 'webhook'
-            'meshblu.forwarders.received':
+            'meshblu.forwarders.message.received':
               signRequest: true
               url: 'http://www.zombo.com'
               method: 'POST'
@@ -326,6 +326,10 @@ describe 'FlowDeployer', ->
             'meshblu.forwarders.received':
               name: 'nanocyte-flow-deploy'
             'meshblu.messageHooks':
+              name: 'nanocyte-flow-deploy'
+            'meshblu.forwarders.broadcast.received':
+              name: 'nanocyte-flow-deploy'
+            'meshblu.forwarders.message.received':
               name: 'nanocyte-flow-deploy'
 
         @device =
