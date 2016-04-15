@@ -27,9 +27,10 @@ describe 'FlowDeployer', ->
         stop: sinon.stub()
 
       @meshbluHttp =
-        message:           sinon.stub()
-        updateDangerously: sinon.stub()
+        message:            sinon.stub()
+        updateDangerously:  sinon.stub()
         createSubscription: sinon.stub()
+        whoami:             sinon.stub()
 
       MeshbluHttp = sinon.spy => @meshbluHttp
 
@@ -321,8 +322,6 @@ describe 'FlowDeployer', ->
 
         @pullMessageHooks =
           $pull:
-            'meshblu.forwarders.broadcast':
-              name: 'nanocyte-flow-deploy'
             'meshblu.forwarders.received':
               name: 'nanocyte-flow-deploy'
             'meshblu.messageHooks':
@@ -331,6 +330,10 @@ describe 'FlowDeployer', ->
               name: 'nanocyte-flow-deploy'
             'meshblu.forwarders.message.received':
               name: 'nanocyte-flow-deploy'
+
+        @removeOldMessageHooks =
+          $unset:
+            'meshblu.forwarders.broadcast': true
 
         @device =
           uuid: 1
@@ -343,10 +346,12 @@ describe 'FlowDeployer', ->
               name: 'nanocyte-flow-deploy'
             ]
 
+        @meshbluHttp.whoami.yields null, meshblu: forwarders: broadcast: []
         @meshbluHttp.updateDangerously.yields null, null
         @sut.setupDeviceForwarding (@error, @result) => done()
 
       it "should update a meshblu device with the webhook to wherever it's going", ->
+        expect(@meshbluHttp.updateDangerously).to.have.been.calledWith 'the-flow-uuid', @removeOldMessageHooks
         expect(@meshbluHttp.updateDangerously).to.have.been.calledWith 'the-flow-uuid', @pullMessageHooks
         expect(@meshbluHttp.updateDangerously).to.have.been.calledWith 'the-flow-uuid', @updateMessageHooks
 
