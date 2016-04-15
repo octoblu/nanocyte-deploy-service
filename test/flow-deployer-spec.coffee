@@ -333,7 +333,7 @@ describe 'FlowDeployer', ->
 
         @removeOldMessageHooks =
           $unset:
-            'meshblu.forwarders.broadcast': true
+            'meshblu.forwarders.broadcast': ''
 
         @device =
           uuid: 1

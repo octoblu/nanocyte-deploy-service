@@ -127,9 +127,9 @@ class FlowDeployer
       if _.isArray device?.meshblu?.forwarders?.broadcast
         removeOldMessageHooks =
           $unset:
-            'meshblu.forwarders.broadcast': true
+            'meshblu.forwarders.broadcast': ''
 
-        tasks.push async.apply @meshbluHttp.updateDangerously, @flowUuid, removeOldMessageHooks
+        tasks.unshift async.apply @meshbluHttp.updateDangerously, @flowUuid, removeOldMessageHooks
 
       async.series tasks, callback
 
