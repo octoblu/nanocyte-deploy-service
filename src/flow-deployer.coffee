@@ -1,9 +1,9 @@
-_ = require 'lodash'
-async = require 'async'
-FLOW_START_NODE = 'engine-start'
-FLOW_STOP_NODE = 'engine-stop'
-MeshbluConfig = require 'meshblu-config'
-debug = require('debug')('nanocyte-deployer:flow-deployer')
+_                   = require 'lodash'
+async               = require 'async'
+FLOW_START_NODE     = 'engine-start'
+FLOW_STOP_NODE      = 'engine-stop'
+MeshbluConfig       = require 'meshblu-config'
+debug               = require('debug')('nanocyte-deployer:flow-deployer')
 FlowStatusMessenger = require './flow-status-messenger'
 
 class FlowDeployer
@@ -104,23 +104,34 @@ class FlowDeployer
       name: 'nanocyte-flow-deploy'
       type: 'webhook'
 
-    removeOldMessageHooks =
-      $pull:
-        'meshblu.forwarders.broadcast': {name: messageHook.name}
-        'meshblu.forwarders.received': {name: messageHook.name}
-        'meshblu.messageHooks': {name: messageHook.name}
-        'meshblu.forwarders.broadcast.received': {name: messageHook.name}
-        'meshblu.forwarders.message.received': {name: messageHook.name}
+    @meshbluHttp.whoami (error, device) =>
+      return callback error if error?
 
-    addNewMessageHooks =
-      $addToSet:
-        'meshblu.forwarders.broadcast.received': messageHook
-        'meshblu.forwarders.message.received': messageHook
+      pullMessageHooks =
+        $pull:
+          'meshblu.forwarders.received': {name: messageHook.name}
+          'meshblu.messageHooks': {name: messageHook.name}
+          'meshblu.forwarders.broadcast.received': {name: messageHook.name}
+          'meshblu.forwarders.message.received': {name: messageHook.name}
 
-    async.series [
-      async.apply @meshbluHttp.updateDangerously, @flowUuid, removeOldMessageHooks
-      async.apply @meshbluHttp.updateDangerously, @flowUuid, addNewMessageHooks
-    ], callback
+      addNewMessageHooks =
+        $addToSet:
+          'meshblu.forwarders.broadcast.received': messageHook
+          'meshblu.forwarders.message.received': messageHook
+
+      tasks = [
+        async.apply @meshbluHttp.updateDangerously, @flowUuid, pullMessageHooks
+        async.apply @meshbluHttp.updateDangerously, @flowUuid, addNewMessageHooks
+      ]
+
+      if _.isArray device?.meshblu?.forwarders?.broadcast
+        removeOldMessageHooks =
+          $unset:
+            'meshblu.forwarders.broadcast': true
+
+        tasks.push async.apply @meshbluHttp.updateDangerously, @flowUuid, removeOldMessageHooks
+
+      async.series tasks, callback
 
   setupMessageSchema: (nodes, callback=->) =>
     triggers = _.filter nodes, class: 'trigger'
@@ -150,7 +161,7 @@ class FlowDeployer
       result[trigger.id] = "#{trigger.name} (#{triggerId})"
     , {}
 
-  createSelfSubscriptions: (flowConfig, callback) =>
+  createSelfSubscriptions: (callback) =>
     subscriptions =
       'broadcast.received': [@flowUuid]
       'message.received': [@flowUuid]
