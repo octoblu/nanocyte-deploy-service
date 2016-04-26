@@ -28,6 +28,7 @@ class FlowDeployer
       flowLoggerUuid: @flowLoggerUuid
 
   deploy: (callback=->) =>
+    debug 'deploy', @benchmark.toString()
     @flowStatusMessenger.message 'begin'
     @getFlowAndUserData (error, results) =>
       debug 'getFlowAndUserData', @benchmark.toString()
@@ -140,7 +141,9 @@ class FlowDeployer
 
         tasks.unshift async.apply @meshbluHttp.updateDangerously, @flowUuid, removeOldMessageHooks
 
-      async.series tasks, callback
+      async.series tasks, (error) =>
+        debug 'setupDeviceForwarding', @benchmark.toString()
+        callback error
 
   setupMessageSchema: (nodes, callback=->) =>
     triggers = _.filter nodes, class: 'trigger'
@@ -162,7 +165,9 @@ class FlowDeployer
     setMessageSchema =
       $set : { 'messageSchema': messageSchema, 'messageFormSchema': messageFormSchema }
 
-    @meshbluHttp.updateDangerously @flowUuid, setMessageSchema, callback
+    @meshbluHttp.updateDangerously @flowUuid, setMessageSchema, (error) =>
+      debug 'setupMessageSchema', @benchmark.toString()
+      callback error
 
   buildFormTitleMap: (triggers) =>
     _.transform triggers, (result, trigger) ->
@@ -178,7 +183,9 @@ class FlowDeployer
     async.forEachOf subscriptions, @createSubscriptionsForType, callback
 
   createSubscriptions: (flowConfig, callback) =>
-    async.forEachOf flowConfig['subscribe-devices'].config, @createSubscriptionsForType, callback
+    async.forEachOf flowConfig['subscribe-devices'].config, @createSubscriptionsForType, (error) =>
+      debug 'createSubscriptions', @benchmark.toString()
+      callback error
 
   createSubscriptionsForType: (uuids, type, callback) =>
     debug 'createSubscriptions', {uuids, type}
@@ -200,14 +207,14 @@ class FlowDeployer
       topic: 'subscribe:pulse'
 
     _.defer @flowStatusMessenger.message, 'begin', undefined, application: 'flow-runner'
-    async.series [
+    async.parallel [
       async.apply @meshbluHttp.message, subscribePulseMessage
       async.apply @meshbluHttp.message, onStartMessage
       async.apply @meshbluHttp.updateDangerously, @flowUuid, $set: {online: true, deploying: false, stopping: false}
     ], callback
 
   stopFlow: (callback=->) =>
-    async.series [
+    async.parallel [
       async.apply @sendStopFlowMessage
       async.apply @meshbluHttp.updateDangerously, @flowUuid, $set: {online: false, deploying: false, stopping: false}
     ], callback
