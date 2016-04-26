@@ -1,16 +1,19 @@
 _                   = require 'lodash'
 async               = require 'async'
+debug               = require('debug')('nanocyte-deployer:flow-deployer')
 FLOW_START_NODE     = 'engine-start'
 FLOW_STOP_NODE      = 'engine-stop'
 MeshbluConfig       = require 'meshblu-config'
 debug               = require('debug')('nanocyte-deployer:flow-deployer')
 FlowStatusMessenger = require './flow-status-messenger'
+SimpleBenchmark     = require 'simple-benchmark'
 
 class FlowDeployer
   constructor: (options, dependencies={}) ->
     {@flowUuid, @instanceId, @flowToken, @forwardUrl, @userUuid, @userToken, @octobluUrl, @deploymentUuid} = options
     {@flowLoggerUuid} = options
     {@configurationSaver, @configurationGenerator, MeshbluHttp, @request} = dependencies
+    @benchmark = new SimpleBenchmark label: "nanocyte-deployer-#{@flowUuid}-#{@deploymentUuid}"
     MeshbluHttp ?= require 'meshblu-http'
     @request ?= require 'request'
     meshbluConfig = new MeshbluConfig
@@ -27,6 +30,7 @@ class FlowDeployer
   deploy: (callback=->) =>
     @flowStatusMessenger.message 'begin'
     @getFlowAndUserData (error, results) =>
+      debug 'getFlowAndUserData', @benchmark.toString()
       @flowStatusMessenger.message 'error', error.message if error?
       return callback error if error?
 
@@ -34,20 +38,25 @@ class FlowDeployer
       results.deploymentUuid = @deploymentUuid
 
       @configurationGenerator.configure results, (error, config, stopConfig) =>
+        debug 'configurationGenerator.configure', @benchmark.toString()
         @flowStatusMessenger.message 'error', error.message if error?
         return callback error if error?
 
         @clearAndSaveConfig config: config, stopConfig: stopConfig, (error) =>
+          debug 'clearAndSaveConfig', @benchmark.toString()
           @flowStatusMessenger.message 'error', error.message if error?
           return callback error if error?
 
           @setupDevice results.flowData, config, (error) =>
+            debug 'setupDevice', @benchmark.toString()
             @flowStatusMessenger.message 'error', error.message if error?
             @flowStatusMessenger.message 'end' unless error?
             callback error
 
   destroy: (callback=->) =>
-    @configurationSaver.stop flowId: @flowUuid, callback
+    @configurationSaver.stop flowId: @flowUuid, (error) =>
+      debug 'configurationSaver.stop', @benchmark.toString()
+      callback error
 
   clearAndSaveConfig: (options, callback) =>
     {config, stopConfig} = options
