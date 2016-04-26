@@ -201,20 +201,23 @@ class FlowDeployer
 
     _.defer @flowStatusMessenger.message, 'begin', undefined, application: 'flow-runner'
     async.series [
-      async.apply @meshbluHttp.updateDangerously, @flowUuid, $set: {online: true, deploying: false, stopping: false}
       async.apply @meshbluHttp.message, subscribePulseMessage
       async.apply @meshbluHttp.message, onStartMessage
+      async.apply @meshbluHttp.updateDangerously, @flowUuid, $set: {online: true, deploying: false, stopping: false}
     ], callback
 
   stopFlow: (callback=->) =>
+    async.series [
+      async.apply @sendStopFlowMessage
+      async.apply @meshbluHttp.updateDangerously, @flowUuid, $set: {online: false, deploying: false, stopping: false}
+    ], callback
+
+  sendStopFlowMessage: (callback) =>
     message =
       devices: [@flowUuid]
       payload:
         from: FLOW_STOP_NODE
 
-    async.series [
-      async.apply @meshbluHttp.updateDangerously, @flowUuid, $set: {online: false, deploying: false, stopping: false}
-      async.apply @meshbluHttp.message, message
-    ], callback
+    @meshbluHttp.message message, callback
 
 module.exports = FlowDeployer
