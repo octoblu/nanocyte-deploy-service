@@ -156,10 +156,17 @@ class FlowDeployer
           title: 'Trigger'
           required: true
           enum: _.pluck(triggers, 'id')
+        data:
+          type: 'string'
 
     messageFormSchema = [
-      key: 'from'
-      titleMap: @buildFormTitleMap triggers
+      { key: 'from', titleMap: @buildFormTitleMap triggers }
+      'data'
+    ]
+
+    messageFormSchema = [
+      { key: "from", titleMap: @buildFormTitleMap triggers}
+      'data'
     ]
 
     setMessageSchema =

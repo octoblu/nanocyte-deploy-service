@@ -359,20 +359,24 @@ describe 'FlowDeployer', ->
       beforeEach (done) ->
         @updateDevice = $set:
           messageSchema:
-            type: "object"
+            type: 'object'
             properties:
               from:
-                type: "string"
+                type: 'string'
                 title: 'Trigger'
                 required: true
                 enum: [ 'a', 'c' ]
+              data:
+                type: 'string'
 
           messageFormSchema: [
-            key: "from"
-            titleMap: {
-              'a' : 'multiply (a)'
-              'c' : 'rabbits (c)'
+            {
+              key: 'from'
+              titleMap:
+                'a' : 'multiply (a)'
+                'c' : 'rabbits (c)' 
             }
+            'data'
           ]
 
         nodes = [
