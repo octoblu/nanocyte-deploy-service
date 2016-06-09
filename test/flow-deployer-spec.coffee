@@ -1,7 +1,6 @@
 _ = require 'lodash'
 FlowDeployer = require '../src/flow-deployer'
 
-
 describe 'FlowDeployer', ->
   describe 'when constructed with a flow', ->
     beforeEach ->
@@ -300,7 +299,7 @@ describe 'FlowDeployer', ->
               name: 'nanocyte-flow-deploy'
             ]
 
-        @meshbluHttp.search.yields null, [meshblu: forwarders: broadcast: []]
+        @meshbluHttp.search.yields null, [flow: {}, meshblu: forwarders: broadcast: []]
         @meshbluHttp.updateDangerously.yields null, null
         @sut.setupDeviceForwarding (@error, @result) => done()
 
