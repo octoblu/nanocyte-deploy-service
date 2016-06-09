@@ -30,7 +30,7 @@ describe 'FlowDeployer', ->
         message:            sinon.stub()
         updateDangerously:  sinon.stub()
         createSubscription: sinon.stub()
-        whoami:             sinon.stub()
+        search:             sinon.stub()
 
       MeshbluHttp = sinon.spy => @meshbluHttp
 
@@ -346,7 +346,7 @@ describe 'FlowDeployer', ->
               name: 'nanocyte-flow-deploy'
             ]
 
-        @meshbluHttp.whoami.yields null, meshblu: forwarders: broadcast: []
+        @meshbluHttp.search.yields null, [meshblu: forwarders: broadcast: []]
         @meshbluHttp.updateDangerously.yields null, null
         @sut.setupDeviceForwarding (@error, @result) => done()
 

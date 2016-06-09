@@ -114,8 +114,16 @@ class FlowDeployer
       name: 'nanocyte-flow-deploy'
       type: 'webhook'
 
-    @meshbluHttp.whoami (error, device) =>
+    query =
+      uuid: @meshbluHttp.uuid
+
+    projection =
+      uuid: true
+      'meshblu.forwarders.broadcast': true
+
+    @meshbluHttp.search query, {projection}, (error, devices) =>
       return callback error if error?
+      device = _.first devices
 
       pullMessageHooks =
         $pull:
