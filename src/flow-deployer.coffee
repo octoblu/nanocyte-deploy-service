@@ -102,6 +102,10 @@ class FlowDeployer
         error = new Error 'Device Not Found'
         error.code = 404
         return callback error
+      unless @flowDevice?.flow
+        error = new Error 'Device is missing flow property'
+        error.code = 400
+        return callback error
       callback null, @flowDevice
 
   setupDevice: ({flowData, config}, callback=->) =>
@@ -110,11 +114,7 @@ class FlowDeployer
       async.apply @createSubscriptions, config
       async.apply @setupDeviceForwarding
       async.apply @setupMessageSchema, flowData.nodes
-      async.apply @addFlowToDevice, flowData
     ], callback
-
-  addFlowToDevice:(flow, callback) =>
-    @meshbluHttp.updateDangerously @flowUuid, $set: flow: flow, callback
 
   setupDeviceForwarding: (callback=->) =>
     messageHook =
