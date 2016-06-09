@@ -10,12 +10,25 @@ SimpleBenchmark     = require 'simple-benchmark'
 
 class FlowDeployer
   constructor: (options, dependencies={}) ->
-    {@flowUuid, @instanceId, @flowToken, @forwardUrl, @userUuid, @userToken, @octobluUrl, @deploymentUuid} = options
-    {@flowLoggerUuid} = options
-    {@configurationSaver, @configurationGenerator, MeshbluHttp, @request} = dependencies
+    {
+      @flowUuid
+      @instanceId
+      @flowToken
+      @forwardUrl
+      @userUuid
+      @userToken
+      @octobluUrl
+      @deploymentUuid
+      @flowLoggerUuid
+    } = options
+    {
+      @configurationSaver
+      @configurationGenerator
+      MeshbluHttp
+    } = dependencies
+
     @benchmark = new SimpleBenchmark label: "nanocyte-deployer-#{@flowUuid}-#{@deploymentUuid}"
     MeshbluHttp ?= require 'meshblu-http'
-    @request ?= require 'request'
     meshbluConfig = new MeshbluConfig
     meshbluJSON = _.assign meshbluConfig.toJSON(), uuid: @flowUuid, token: @flowToken
     @meshbluHttp = new MeshbluHttp meshbluJSON
@@ -30,29 +43,22 @@ class FlowDeployer
   deploy: (callback=->) =>
     debug 'deploy', @benchmark.toString()
     @flowStatusMessenger.message 'begin'
-    @getFlowAndUserData (error, results) =>
-      debug 'getFlowAndUserData', @benchmark.toString()
-      @flowStatusMessenger.message 'error', error.message if error?
-      return callback error if error?
-
-      results.flowToken = @flowToken
-      results.deploymentUuid = @deploymentUuid
-
-      @configurationGenerator.configure results, (error, config, stopConfig) =>
+    @getFlowDevice (error) =>
+      return @_handleError error, callback if error?
+      flowData = @flowDevice.flow
+      @configurationGenerator.configure {flowData, @flowToken, @deploymentUuid}, (error, config, stopConfig) =>
         debug 'configurationGenerator.configure', @benchmark.toString()
-        @flowStatusMessenger.message 'error', error.message if error?
-        return callback error if error?
+        return @_handleError error, callback if error?
 
-        @clearAndSaveConfig config: config, stopConfig: stopConfig, (error) =>
+        @clearAndSaveConfig {config, stopConfig}, (error) =>
           debug 'clearAndSaveConfig', @benchmark.toString()
-          @flowStatusMessenger.message 'error', error.message if error?
-          return callback error if error?
+          return @_handleError error, callback if error?
 
-          @setupDevice results.flowData, config, (error) =>
+          @setupDevice {flowData, config}, (error) =>
             debug 'setupDevice', @benchmark.toString()
-            @flowStatusMessenger.message 'error', error.message if error?
-            @flowStatusMessenger.message 'end' unless error?
-            callback error
+            return @_handleError error, callback if error?
+            @flowStatusMessenger.message 'end'
+            callback()
 
   destroy: (callback=->) =>
     @configurationSaver.stop flowId: @flowUuid, (error) =>
@@ -78,29 +84,29 @@ class FlowDeployer
       async.apply @configurationSaver.save, saveStopOptions
     ], callback
 
-  getFlowAndUserData: (callback) =>
-    async.parallel
-      userData: async.apply @_get, "#{@octobluUrl}/api/user"
-      flowData: async.apply @_get, "#{@octobluUrl}/api/flows/#{@flowUuid}"
-    , callback
+  getFlowDevice: (callback) =>
+    return callback() if @flowDevice?
 
-  _get: (url, callback)=>
-    options =
-      json: true
-      auth:
-        user: @userUuid
-        pass: @userToken
+    query =
+      uuid: @flowUuid
 
-    @request.get url, options, (error, response, body) =>
-      callback error, body
+    projection =
+      uuid: true
+      flow: true
+      'meshblu.forwarders.broadcast': true
 
-  setupDevice: (flow, flowConfig, callback=->) =>
+    @meshbluHttp.search query, {projection}, (error, devices) =>
+      return callback error if error?
+      @flowDevice = _.first devices
+      callback null, @flowDevice
+
+  setupDevice: ({flowData, config}, callback=->) =>
     async.series [
       async.apply @createSelfSubscriptions
-      async.apply @createSubscriptions, flowConfig
+      async.apply @createSubscriptions, config
       async.apply @setupDeviceForwarding
-      async.apply @setupMessageSchema, flow.nodes
-      async.apply @addFlowToDevice, flow
+      async.apply @setupMessageSchema, flowData.nodes
+      async.apply @addFlowToDevice, flowData
     ], callback
 
   addFlowToDevice:(flow, callback) =>
@@ -114,16 +120,8 @@ class FlowDeployer
       name: 'nanocyte-flow-deploy'
       type: 'webhook'
 
-    query =
-      uuid: @meshbluHttp.uuid
-
-    projection =
-      uuid: true
-      'meshblu.forwarders.broadcast': true
-
-    @meshbluHttp.search query, {projection}, (error, devices) =>
+    @getFlowDevice (error) =>
       return callback error if error?
-      device = _.first devices
 
       pullMessageHooks =
         $pull:
@@ -142,7 +140,7 @@ class FlowDeployer
         async.apply @meshbluHttp.updateDangerously, @flowUuid, addNewMessageHooks
       ]
 
-      if _.isArray device?.meshblu?.forwarders?.broadcast
+      if _.isArray @flowDevice?.meshblu?.forwarders?.broadcast
         removeOldMessageHooks =
           $unset:
             'meshblu.forwarders.broadcast': ''
@@ -239,5 +237,9 @@ class FlowDeployer
         from: FLOW_STOP_NODE
 
     @meshbluHttp.message message, callback
+
+  _handleError: (error, callback) =>
+    @flowStatusMessenger.message 'error', error.message
+    callback error
 
 module.exports = FlowDeployer

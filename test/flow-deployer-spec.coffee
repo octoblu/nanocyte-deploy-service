@@ -5,7 +5,6 @@ FlowDeployer = require '../src/flow-deployer'
 describe 'FlowDeployer', ->
   describe 'when constructed with a flow', ->
     beforeEach ->
-      @request = get: sinon.stub()
       @configuration = erik_is_happy: true
 
       options =
@@ -38,10 +37,8 @@ describe 'FlowDeployer', ->
         configurationGenerator: @configurationGenerator
         configurationSaver: @configurationSaver
         MeshbluHttp: MeshbluHttp
-        request: @request
 
-      @request.get.withArgs('https://api.octoblu.com/api/flows/the-flow-uuid').yields null, {}, {a: 1, b: 5}
-      @request.get.withArgs('https://api.octoblu.com/api/user').yields null, {}, {api: {}}
+      @meshbluHttp.search.yields null, [flow: { a: 1, b: 5 }]
 
     describe 'when deploy is called', ->
       beforeEach (done)->
@@ -55,7 +52,7 @@ describe 'FlowDeployer', ->
         @configurationSaver.stop.yields null
         @configurationSaver.save.yields null
         @sut.setupDevice = sinon.stub().yields null
-        @sut.deploy  => done()
+        @sut.deploy => done()
 
       it 'should message the FLOW_LOGGER_UUID', ->
         expect(@meshbluHttp.message).to.have.been.called
@@ -76,7 +73,6 @@ describe 'FlowDeployer', ->
       it 'should call configuration generator with the flow', ->
         expect(@configurationGenerator.configure).to.have.been.calledWith
           flowData: { a: 1, b: 5 }
-          userData: {api: {}}
           deploymentUuid: 'the-deployment-uuid'
           flowToken: 'the-flow-token'
 
@@ -97,15 +93,8 @@ describe 'FlowDeployer', ->
             stop: 'config'
         )
 
-      it 'should call request.get', ->
-        options =
-          json: true
-          auth :
-            user: 'some-user-uuid'
-            pass: 'some-user-token'
-
-        expect(@request.get).to.have.been.calledWith 'https://api.octoblu.com/api/flows/the-flow-uuid', options
-        expect(@request.get).to.have.been.calledWith 'https://api.octoblu.com/api/user', options
+      it 'should call meshbluHttp.search', ->
+        expect(@meshbluHttp.search).to.have.been.calledWith uuid: 'the-flow-uuid'
 
       it 'should message the FLOW_LOGGER_UUID', ->
         expect(@meshbluHttp.message).to.have.been.called
@@ -123,48 +112,13 @@ describe 'FlowDeployer', ->
             state:    'end'
             message:  undefined
 
-    describe 'when deploy is called and user GET errored', ->
-      beforeEach (done) ->
-        userUrl = 'https://api.octoblu.com/api/user'
-        @request.get.withArgs(userUrl).yields new Error 'whoa, thats not a user', null
-        @sut.deploy  (@error, @result) => done()
-
-      it 'should call request.get', ->
-        expect(@request.get).to.have.been.called
-
-      it 'should yield and error', ->
-        expect(@error).to.exist
-
-      it 'should not give us a result', ->
-        expect(@result).to.not.exist
-
-      it 'should message the FLOW_LOGGER_UUID', ->
-        expect(@meshbluHttp.message).to.have.been.calledTwice
-        firstArg = @meshbluHttp.message.secondCall.args[0]
-        delete firstArg.payload.date
-
-        expect(firstArg).to.deep.equal
-          devices: ['flow-logger-uuid']
-          payload:
-            application: 'flow-deploy-service'
-            deploymentUuid: 'the-deployment-uuid'
-            flowUuid: 'the-flow-uuid'
-            userUuid: 'some-user-uuid'
-            workflow: 'flow-start'
-            state:    'error'
-            message:  'whoa, thats not a user'
-
     describe 'when deploy is called and flow get errored', ->
       beforeEach (done) ->
-        userUrl = 'https://api.octoblu.com/api/user'
-        @request.get.withArgs(userUrl).yields null
-
-        flowUrl = 'https://api.octoblu.com/api/flows/the-flow-uuid'
-        @request.get.withArgs(flowUrl).yields new Error 'whoa, shoots bad', null
+        @meshbluHttp.search.yields new Error 'whoa, shoots bad', null
         @sut.deploy  (@error, @result) => done()
 
-      it 'should call request.get', ->
-        expect(@request.get).to.have.been.called
+      it 'should call meshbluHttp.search', ->
+        expect(@meshbluHttp.search).to.have.been.called
 
       it 'should yield and error', ->
         expect(@error).to.exist
