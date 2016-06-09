@@ -98,6 +98,10 @@ class FlowDeployer
     @meshbluHttp.search query, {projection}, (error, devices) =>
       return callback error if error?
       @flowDevice = _.first devices
+      unless @flowDevice?
+        error = new Error 'Device Not Found'
+        error.code = 404
+        return callback error
       callback null, @flowDevice
 
   setupDevice: ({flowData, config}, callback=->) =>
