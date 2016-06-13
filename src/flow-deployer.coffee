@@ -20,6 +20,7 @@ class FlowDeployer
       @octobluUrl
       @deploymentUuid
       @flowLoggerUuid
+      @client
     } = options
     {
       @configurationSaver
@@ -32,6 +33,8 @@ class FlowDeployer
     meshbluConfig = new MeshbluConfig
     meshbluJSON = _.assign meshbluConfig.toJSON(), uuid: @flowUuid, token: @flowToken
     @meshbluHttp = new MeshbluHttp meshbluJSON
+
+    throw new Error 'NanocyteDeployer requires client' unless @client?
 
     @flowStatusMessenger = new FlowStatusMessenger @meshbluHttp,
       userUuid: @userUuid
@@ -61,9 +64,13 @@ class FlowDeployer
             callback()
 
   destroy: (callback=->) =>
-    @configurationSaver.stop flowId: @flowUuid, (error) =>
+    @_stop {flowId: @flowUuid}, callback
+
+  _stop: ({flowId}, callback) =>
+    @configurationSaver.stop {flowId}, (error) =>
       debug 'configurationSaver.stop', @benchmark.toString()
-      callback error
+      return callback error if error?
+      @client.del flowId, callback
 
   clearAndSaveConfig: (options, callback) =>
     {config, stopConfig} = options
@@ -79,7 +86,7 @@ class FlowDeployer
       flowData: stopConfig
 
     async.series [
-      async.apply @configurationSaver.stop, flowId: @flowUuid
+      async.apply @_stop, flowId: @flowUuid
       async.apply @configurationSaver.save, saveOptions
       async.apply @configurationSaver.save, saveStopOptions
     ], callback

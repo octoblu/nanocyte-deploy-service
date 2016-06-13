@@ -1,8 +1,13 @@
 _ = require 'lodash'
+Redis = require 'ioredis'
 FlowDeployer = require '../src/flow-deployer'
 
 describe 'FlowDeployer', ->
   describe 'when constructed with a flow', ->
+    beforeEach (done) ->
+      @client = new Redis dropBufferSupport: true
+      @client.on 'ready', done
+
     beforeEach ->
       @configuration = erik_is_happy: true
 
@@ -16,6 +21,7 @@ describe 'FlowDeployer', ->
         octobluUrl: 'https://api.octoblu.com'
         deploymentUuid: 'the-deployment-uuid'
         flowLoggerUuid: 'flow-logger-uuid'
+        client: @client
 
       @configurationGenerator =
         configure: sinon.stub()
@@ -426,3 +432,21 @@ describe 'FlowDeployer', ->
 
         it 'should call the callback with the error', ->
           expect(@error).to.exist
+
+    describe 'destroy', ->
+      describe 'when called and there is no error', ->
+        beforeEach (done) ->
+          @client.set 'the-flow-uuid', Date.now(), done
+
+        beforeEach (done) ->
+          @configurationSaver.stop.yields null
+          @sut.destroy (@error, @result) => done()
+
+        it 'should call stop', ->
+          expect(@configurationSaver.stop).to.have.been.called
+
+        it 'should remove the redis key', (done) ->
+          @client.exists 'the-flow-uuid', (error, exists) =>
+            return done error if error?
+            expect(exists).to.equal 0
+            done()
