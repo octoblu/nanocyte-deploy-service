@@ -185,7 +185,7 @@ class FlowDeployer
       { key: 'payload', 'type': 'input', title: "Payload", description: "Use {{msg}} to send the entire message"}
     ]
     setMessageSchema =
-      $set : { 'messageSchema': messageSchema, 'messageFormSchema': messageFormSchema }
+      $set : {messageSchema, messageFormSchema, @instanceId}
 
     @meshbluHttp.updateDangerously @flowUuid, setMessageSchema, (error) =>
       debug 'setupMessageSchema', @benchmark.toString()

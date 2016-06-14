@@ -317,6 +317,7 @@ describe 'FlowDeployer', ->
     describe 'setupMessageSchema', ->
       beforeEach (done) ->
         @updateDevice = $set:
+          instanceId: 'an-instance-id'
           messageSchema:
             type: 'object'
             properties:
