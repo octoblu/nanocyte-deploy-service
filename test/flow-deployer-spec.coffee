@@ -1,8 +1,17 @@
 _ = require 'lodash'
 Redis = require 'ioredis'
 FlowDeployer = require '../src/flow-deployer'
+shmock = require 'shmock'
+enableDestroy = require 'server-destroy'
 
 describe 'FlowDeployer', ->
+  beforeEach (done) ->
+    @intervalService = shmock done
+    enableDestroy @intervalService
+
+  afterEach (done) ->
+    @intervalService.destroy done
+
   describe 'when constructed with a flow', ->
     beforeEach (done) ->
       @client = new Redis dropBufferSupport: true
@@ -22,6 +31,7 @@ describe 'FlowDeployer', ->
         deploymentUuid: 'the-deployment-uuid'
         flowLoggerUuid: 'flow-logger-uuid'
         client: @client
+        intervalServiceUri: "http://localhost:#{@intervalService.address().port}"
 
       @configurationGenerator =
         configure: sinon.stub()
@@ -43,7 +53,15 @@ describe 'FlowDeployer', ->
         configurationSaver: @configurationSaver
         MeshbluHttp: MeshbluHttp
 
-      @meshbluHttp.search.yields null, [flow: { a: 1, b: 5 }]
+      sinon.stub(@sut, 'registerIntervalDevices').yields null
+
+      flowData =
+        flow:
+          nodes: [
+            id: 'a'
+            class: 'interval'
+          ]
+      @meshbluHttp.search.yields null, [flowData]
 
     describe 'when deploy is called', ->
       beforeEach (done)->
@@ -52,6 +70,12 @@ describe 'FlowDeployer', ->
           'subscribe-devices':
             config:
               'broadcast.sent': ['subscribe-to-this-uuid']
+
+        @sut.registerIntervalDevices.yields null, [
+          id: 'a'
+          class: 'interval'
+          deviceId: 'interval-a'
+        ]
 
         @configurationGenerator.configure.yields null, flowConfig, {stop: 'config'}
         @configurationSaver.stop.yields null
@@ -75,9 +99,17 @@ describe 'FlowDeployer', ->
             state:    'begin'
             message:  undefined
 
+      it 'should call registerIntervalDevices with the flow', ->
+        nodes = [
+          id: 'a'
+          class: 'interval'
+        ]
+
+        expect(@sut.registerIntervalDevices).to.have.been.calledWith nodes
+
       it 'should call configuration generator with the flow', ->
         expect(@configurationGenerator.configure).to.have.been.calledWith
-          flowData: { a: 1, b: 5 }
+          flowData: nodes: [{id: 'a', class: 'interval', deviceId: 'interval-a'}]
           deploymentUuid: 'the-deployment-uuid'
           flowToken: 'the-flow-token'
 
@@ -369,6 +401,7 @@ describe 'FlowDeployer', ->
 
     describe 'registerIntervalDevices', ->
       beforeEach (done) ->
+        @sut.registerIntervalDevices.restore()
         @updateDevice = $set:
           instanceId: 'an-instance-id'
           messageSchema:
@@ -429,12 +462,38 @@ describe 'FlowDeployer', ->
           }
         ]
 
-        @sut.registerIntervalDevices nodes, (@error, @result) =>
-          console.log {@error, @result}
+        @createIntervalRequest = @intervalService.post '/nodes/a/intervals'
+          .reply '201', uuid: 'interval-a'
+        @createScheduleRequest = @intervalService.post '/nodes/b/intervals'
+          .reply '201', uuid: 'interval-b'
+        @createThrottleRequest = @intervalService.post '/nodes/c/intervals'
+          .reply '201', uuid: 'interval-c'
+        @createDebounceRequest = @intervalService.post '/nodes/d/intervals'
+          .reply '201', uuid: 'interval-d'
+        @createDelayRequest = @intervalService.post '/nodes/e/intervals'
+          .reply '201', uuid: 'interval-e'
+
+        @sut.registerIntervalDevices nodes, (@error, @nodes) =>
           done()
 
-      it "should create interval devices with the interval service", ->
-        expect(true).to.be.false
+      it 'should create the intervals', ->
+        expect(@createIntervalRequest.isDone).to.be.true
+        expect(@createScheduleRequest.isDone).to.be.true
+        expect(@createThrottleRequest.isDone).to.be.true
+        expect(@createDebounceRequest.isDone).to.be.true
+        expect(@createDelayRequest.isDone).to.be.true
+
+      it 'should set the deviceId of the node', ->
+        nodeA = _.find @nodes, id: 'a'
+        expect(nodeA.deviceId).to.equal 'interval-a'
+        nodeB = _.find @nodes, id: 'b'
+        expect(nodeB.deviceId).to.equal 'interval-b'
+        nodeC = _.find @nodes, id: 'c'
+        expect(nodeC.deviceId).to.equal 'interval-c'
+        nodeD = _.find @nodes, id: 'd'
+        expect(nodeD.deviceId).to.equal 'interval-d'
+        nodeE = _.find @nodes, id: 'e'
+        expect(nodeE.deviceId).to.equal 'interval-e'
 
     describe 'startFlow', ->
       describe 'when called and there is no errors', ->

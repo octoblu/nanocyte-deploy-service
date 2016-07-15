@@ -1,6 +1,6 @@
 _                   = require 'lodash'
 async               = require 'async'
-debug               = require('debug')('nanocyte-deployer:flow-deployer')
+request             = require 'request'
 FLOW_START_NODE     = 'engine-start'
 FLOW_STOP_NODE      = 'engine-stop'
 MeshbluConfig       = require 'meshblu-config'
@@ -21,6 +21,7 @@ class FlowDeployer
       @deploymentUuid
       @flowLoggerUuid
       @client
+      @intervalServiceUri
     } = options
     {
       @configurationSaver
@@ -35,6 +36,7 @@ class FlowDeployer
     @meshbluHttp = new MeshbluHttp meshbluJSON
 
     throw new Error 'NanocyteDeployer requires client' unless @client?
+    throw new Error 'NanocyteDeployer requires intervalServiceUri' unless @intervalServiceUri?
 
     @flowStatusMessenger = new FlowStatusMessenger @meshbluHttp,
       userUuid: @userUuid
@@ -49,28 +51,37 @@ class FlowDeployer
     @getFlowDevice (error) =>
       return @_handleError error, callback if error?
       flowData = @flowDevice.flow
-      @configurationGenerator.configure {flowData, @flowToken, @deploymentUuid}, (error, config, stopConfig) =>
-        debug 'configurationGenerator.configure', @benchmark.toString()
-        return @_handleError error, callback if error?
 
-        @clearAndSaveConfig {config, stopConfig}, (error) =>
-          debug 'clearAndSaveConfig', @benchmark.toString()
+      @registerIntervalDevices flowData.nodes, (error, nodes) =>
+        debug 'registerIntervalDevices', @benchmark.toString()
+        return @_handleError error, callback if error?
+        flowData.nodes = nodes
+
+        @configurationGenerator.configure {flowData, @flowToken, @deploymentUuid}, (error, config, stopConfig) =>
+          debug 'configurationGenerator.configure', @benchmark.toString()
           return @_handleError error, callback if error?
 
-          @setupDevice {flowData, config}, (error) =>
-            debug 'setupDevice', @benchmark.toString()
+          @clearAndSaveConfig {config, stopConfig}, (error) =>
+            debug 'clearAndSaveConfig', @benchmark.toString()
             return @_handleError error, callback if error?
-            @flowStatusMessenger.message 'end'
-            callback()
+
+            @setupDevice {flowData, config}, (error) =>
+              debug 'setupDevice', @benchmark.toString()
+              return @_handleError error, callback if error?
+              @flowStatusMessenger.message 'end'
+              callback()
 
   destroy: (callback=->) =>
     @_stop {flowId: @flowUuid}, callback
 
   _stop: ({flowId}, callback) =>
-    @configurationSaver.stop {flowId}, (error) =>
-      debug 'configurationSaver.stop', @benchmark.toString()
+    @getFlowDevice (error) =>
       return callback error if error?
-      @client.del flowId, callback
+      @configurationSaver.stop {flowId}, (error) =>
+        debug 'configurationSaver.stop', @benchmark.toString()
+        return callback error if error?
+        @client.del flowId, callback
+        # @destroyDevice {flowData}, (error) =>
 
   clearAndSaveConfig: (options, callback) =>
     {config, stopConfig} = options
@@ -121,7 +132,6 @@ class FlowDeployer
       async.apply @createSubscriptions, config
       async.apply @setupDeviceForwarding
       async.apply @setupMessageSchema, flowData.nodes
-      async.apply @registerIntervalDevices, flowData.nodes
     ], callback
 
   setupDeviceForwarding: (callback=->) =>
@@ -193,11 +203,26 @@ class FlowDeployer
       callback error
 
   registerIntervalDevices: (nodes, callback=->) =>
+    nodes = _.cloneDeep nodes
     intervals = _.filter nodes, (node) =>
       return _.includes ['interval', 'schedule', 'throttle', 'debounce', 'delay'], node?.class
-    _.each intervals, (interval) =>
-      console.log interval
-    callback()
+    async.eachSeries intervals, @_registerIntervalDevice, (error) =>
+      callback error, nodes
+
+  _registerIntervalDevice: (node, callback) =>
+    options =
+      baseUrl: @intervalServiceUri
+      uri: "/nodes/#{node.id}/intervals"
+      auth:
+        username: @flowUuid
+        password: @flowToken
+      json: true
+
+    request.post options, (error, response, body) =>
+      return callback error if error?
+      return callback new Error 'Unable to create interval' unless body?.uuid?
+      node.deviceId = body.uuid
+      callback()
 
   buildFormTitleMap: (triggers) =>
     _.transform triggers, (result, trigger) ->

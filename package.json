@@ -30,6 +30,8 @@
     "mocha": "^2.3.3",
     "mocha-istanbul": "^0.2.0",
     "semver": "^5.0.3",
+    "server-destroy": "^1.0.1",
+    "shmock": "^0.8.1",
     "sinon": "^1.17.0",
     "sinon-chai": "^2.8.0"
   },
