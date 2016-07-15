@@ -568,11 +568,16 @@ describe 'FlowDeployer', ->
           @client.set 'the-flow-uuid', Date.now(), done
 
         beforeEach (done) ->
-          @configurationSaver.stop.yields null
+          @destroyIntervalRequest = @intervalService.delete '/nodes/a/intervals/interval-a'
+            .reply '204'
+          @configurationSaver.stop.yields null, [{instanceId: '', nodes: [{id: 'a', class: 'interval', deviceId: 'interval-a'}]}]
           @sut.destroy (@error, @result) => done()
 
         it 'should call stop', ->
           expect(@configurationSaver.stop).to.have.been.called
+
+        it 'should unregister the interval', ->
+          @destroyIntervalRequest.done()
 
         it 'should remove the redis key', (done) ->
           @client.exists 'the-flow-uuid', (error, exists) =>

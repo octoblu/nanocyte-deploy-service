@@ -75,13 +75,29 @@ class FlowDeployer
     @_stop {flowId: @flowUuid}, callback
 
   _stop: ({flowId}, callback) =>
-    @getFlowDevice (error) =>
+    @configurationSaver.stop {flowId}, (error, records) =>
+      debug 'configurationSaver.stop', @benchmark.toString()
       return callback error if error?
-      @configurationSaver.stop {flowId}, (error) =>
-        debug 'configurationSaver.stop', @benchmark.toString()
-        return callback error if error?
+      async.each records, @_unregisterInstance, (error) =>
         @client.del flowId, callback
-        # @destroyDevice {flowData}, (error) =>
+
+  _unregisterInstance: (record, callback) =>
+    {nodes} = record
+    intervals = @_filterIntervalNodes nodes
+    async.eachSeries intervals, @_unregisterIntervalDevice, callback
+
+  _unregisterIntervalDevice: (node, callback) =>
+    options =
+      baseUrl: @intervalServiceUri
+      uri: "/nodes/#{node.id}/intervals/#{node.deviceId}"
+      auth:
+        username: @flowUuid
+        password: @flowToken
+      json: true
+
+    request.delete options, (error, response, body) =>
+      return callback error if error?
+      callback()
 
   clearAndSaveConfig: (options, callback) =>
     {config, stopConfig} = options
@@ -202,10 +218,13 @@ class FlowDeployer
       debug 'setupMessageSchema', @benchmark.toString()
       callback error
 
+  _filterIntervalNodes: (nodes) =>
+    _.filter nodes, (node) =>
+      return _.includes ['interval', 'schedule', 'throttle', 'debounce', 'delay'], node?.class
+
   registerIntervalDevices: (nodes, callback=->) =>
     nodes = _.cloneDeep nodes
-    intervals = _.filter nodes, (node) =>
-      return _.includes ['interval', 'schedule', 'throttle', 'debounce', 'delay'], node?.class
+    intervals = @_filterIntervalNodes nodes
     async.eachSeries intervals, @_registerIntervalDevice, (error) =>
       callback error, nodes
 
