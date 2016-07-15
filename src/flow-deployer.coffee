@@ -121,6 +121,7 @@ class FlowDeployer
       async.apply @createSubscriptions, config
       async.apply @setupDeviceForwarding
       async.apply @setupMessageSchema, flowData.nodes
+      async.apply @registerIntervalDevices, flowData.nodes
     ], callback
 
   setupDeviceForwarding: (callback=->) =>
@@ -190,6 +191,13 @@ class FlowDeployer
     @meshbluHttp.updateDangerously @flowUuid, setMessageSchema, (error) =>
       debug 'setupMessageSchema', @benchmark.toString()
       callback error
+
+  registerIntervalDevices: (nodes, callback=->) =>
+    intervals = _.filter nodes, (node) =>
+      return _.includes ['interval', 'schedule', 'throttle', 'debounce', 'delay'], node?.class
+    _.each intervals, (interval) =>
+      console.log interval
+    callback()
 
   buildFormTitleMap: (triggers) =>
     _.transform triggers, (result, trigger) ->

@@ -367,6 +367,75 @@ describe 'FlowDeployer', ->
       it "should update a meshblu device with message schema for triggers", ->
         expect(@sut.meshbluHttp.updateDangerously).to.have.been.calledWith 'the-flow-uuid', @updateDevice
 
+    describe 'registerIntervalDevices', ->
+      beforeEach (done) ->
+        @updateDevice = $set:
+          instanceId: 'an-instance-id'
+          messageSchema:
+            type: 'object'
+            properties:
+              from:
+                type: 'string'
+                title: 'Trigger'
+                required: true
+                enum: [ 'a', 'c' ]
+              payload:
+                title: "payload"
+                description: "Use {{msg}} to send the entire message"
+              replacePayload:
+                type: 'string'
+                default: 'payload'
+
+          messageFormSchema: [
+            {
+              key: 'from'
+              titleMap:
+                'a' : 'multiply (a)'
+                'c' : 'rabbits (c)'
+            }
+            { key: 'payload', 'type': 'input', title: "Payload", description: "Use {{msg}} to send the entire message"}
+          ]
+
+        nodes = [
+          {
+            class: 'interval'
+            id: 'a'
+            name: 'divide'
+          },
+          {
+            class: 'schedule'
+            id: 'b'
+            name: 'everything'
+          },
+          {
+            class: 'throttle'
+            id: 'c'
+            name: 'by'
+          },
+          {
+            class: 'debounce'
+            id: 'd'
+            name: 'zero'
+          },
+          {
+            class: 'delay'
+            id: 'e'
+            name: 'or'
+          },
+          {
+            class: 'not-an-interval'
+            id: 'f'
+            name: 'infinity'
+          }
+        ]
+
+        @sut.registerIntervalDevices nodes, (@error, @result) =>
+          console.log {@error, @result}
+          done()
+
+      it "should create interval devices with the interval service", ->
+        expect(true).to.be.false
+
     describe 'startFlow', ->
       describe 'when called and there is no errors', ->
         beforeEach (done) ->
