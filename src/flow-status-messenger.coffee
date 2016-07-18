@@ -3,7 +3,7 @@ class FlowStatusMessenger
     @meshbluHttp = meshbluHttp
     {@userUuid, @flowUuid, @workflow, @deploymentUuid, @flowLoggerUuid} = options
 
-  message: (state,message,overrides={}) =>
+  message: (state,message,overrides={},callback=->) =>
     {application} = overrides
     application ?= 'flow-deploy-service'
 
@@ -18,6 +18,6 @@ class FlowStatusMessenger
         workflow: @workflow
         state:    state
         message:  message
-    , =>
+    , callback
 
 module.exports = FlowStatusMessenger

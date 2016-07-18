@@ -32,7 +32,7 @@ class FlowDeployer
     @benchmark = new SimpleBenchmark label: "nanocyte-deployer-#{@flowUuid}-#{@deploymentUuid}"
     MeshbluHttp ?= require 'meshblu-http'
     meshbluConfig = new MeshbluConfig
-    meshbluJSON = _.assign meshbluConfig.toJSON(), uuid: @flowUuid, token: @flowToken
+    meshbluJSON = _.defaults {uuid: @flowUuid, token: @flowToken}, meshbluConfig.toJSON()
     @meshbluHttp = new MeshbluHttp meshbluJSON
 
     throw new Error 'NanocyteDeployer requires client' unless @client?
@@ -234,7 +234,7 @@ class FlowDeployer
 
   _filterIntervalNodes: (nodes) =>
     _.filter nodes, (node) =>
-      return _.includes ['interval', 'schedule', 'throttle', 'debounce', 'delay'], node?.class
+      return _.includes ['interval', 'schedule', 'throttle', 'debounce', 'delay', 'leading-edge-debounce'], node?.class
 
   registerIntervalDevices: (nodes, callback=->) =>
     nodes = _.cloneDeep nodes
@@ -305,11 +305,11 @@ class FlowDeployer
       devices: [@flowUuid]
       topic: 'subscribe:pulse'
 
-    _.defer @flowStatusMessenger.message, 'begin', undefined, application: 'flow-runner'
     async.parallel [
       async.apply @meshbluHttp.message, subscribePulseMessage
       async.apply @meshbluHttp.message, onStartMessage
       async.apply @meshbluHttp.updateDangerously, @flowUuid, $set: {online: true, deploying: false, stopping: false}
+      async.apply @flowStatusMessenger.message, 'begin', undefined, application: 'flow-runner'
     ], callback
 
   stopFlow: (callback=->) =>
