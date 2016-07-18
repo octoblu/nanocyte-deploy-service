@@ -402,6 +402,7 @@ describe 'FlowDeployer', ->
     describe 'registerIntervalDevices', ->
       beforeEach (done) ->
         @sut.registerIntervalDevices.restore()
+        @sut.meshbluHttp.updateDangerously = sinon.stub().yields null
         @updateDevice = $set:
           instanceId: 'an-instance-id'
           messageSchema:
@@ -495,6 +496,13 @@ describe 'FlowDeployer', ->
         nodeE = _.find @nodes, id: 'e'
         expect(nodeE.deviceId).to.equal 'interval-e'
 
+      it 'should update sendWhitelist', ->
+        data =
+          $addToSet:
+            sendWhitelist:
+              $each: ['interval-a', 'interval-b', 'interval-c', 'interval-d', 'interval-e']
+        expect(@sut.meshbluHttp.updateDangerously).to.have.been.calledWith 'the-flow-uuid', data
+
     describe 'startFlow', ->
       describe 'when called and there is no errors', ->
         beforeEach (done) ->
@@ -568,9 +576,20 @@ describe 'FlowDeployer', ->
           @client.set 'the-flow-uuid', Date.now(), done
 
         beforeEach (done) ->
+          @sut.meshbluHttp.updateDangerously = sinon.stub().yields null
           @destroyIntervalRequest = @intervalService.delete '/nodes/a/intervals/interval-a'
             .reply '204'
-          @configurationSaver.stop.yields null, [{instanceId: '', nodes: [{id: 'a', class: 'interval', deviceId: 'interval-a'}]}]
+
+          flowData =
+            "f0ab929d-0709-4fb4-a482-f9808e961682":
+              config:
+                id: "a"
+                class: "interval"
+                deviceId: "interval-a"
+
+          stopConfig =
+            flowData: JSON.stringify flowData
+          @configurationSaver.stop.yields null, [stopConfig]
           @sut.destroy (@error, @result) => done()
 
         it 'should call stop', ->
@@ -584,3 +603,9 @@ describe 'FlowDeployer', ->
             return done error if error?
             expect(exists).to.equal 0
             done()
+
+        it 'should remove devices from sendWhitelist', ->
+          data =
+            $pullAll:
+              sendWhitelist: ['interval-a']
+          expect(@sut.meshbluHttp.updateDangerously).to.have.been.calledWith 'the-flow-uuid', data

@@ -82,9 +82,22 @@ class FlowDeployer
         @client.del flowId, callback
 
   _unregisterInstance: (record, callback) =>
-    {nodes} = record
+    flowData = JSON.parse(record.flowData)
+    nodes = _.pluck _.values(flowData), 'config'
     intervals = @_filterIntervalNodes nodes
-    async.eachSeries intervals, @_unregisterIntervalDevice, callback
+    async.eachSeries intervals, @_unregisterIntervalDevice, (error) =>
+      return callback error if error?
+
+      deviceIds = _.pluck intervals, 'deviceId'
+
+      if _.isEmpty deviceIds
+        return callback null, nodes
+
+      updateSendWhitelist =
+        $pullAll:
+          sendWhitelist: deviceIds
+      @meshbluHttp.updateDangerously @flowUuid, updateSendWhitelist, (error) =>
+        callback error, nodes
 
   _unregisterIntervalDevice: (node, callback) =>
     options =
@@ -226,7 +239,18 @@ class FlowDeployer
     nodes = _.cloneDeep nodes
     intervals = @_filterIntervalNodes nodes
     async.eachSeries intervals, @_registerIntervalDevice, (error) =>
-      callback error, nodes
+      return callback error if error?
+      deviceIds = _.pluck intervals, 'deviceId'
+
+      if _.isEmpty deviceIds
+        return callback null, nodes
+
+      updateSendWhitelist =
+        $addToSet:
+          sendWhitelist:
+            $each: deviceIds
+      @meshbluHttp.updateDangerously @flowUuid, updateSendWhitelist, (error) =>
+        callback error, nodes
 
   _registerIntervalDevice: (node, callback) =>
     options =
