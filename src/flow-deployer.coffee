@@ -83,12 +83,13 @@ class FlowDeployer
 
   _unregisterInstance: (record, callback) =>
     flowData = JSON.parse(record.flowData)
-    nodes = _.pluck _.values(flowData), 'config'
-    intervals = @_filterIntervalNodes nodes
+    nodes = _.map _.values(flowData), 'config'
+    intervals = _.uniqBy @_filterIntervalNodes(nodes), 'id'
+
     async.eachSeries intervals, @_unregisterIntervalDevice, (error) =>
       return callback error if error?
 
-      deviceIds = _.pluck intervals, 'deviceId'
+      deviceIds = _.map intervals, 'deviceId'
 
       if _.isEmpty deviceIds
         return callback null, nodes
@@ -212,7 +213,7 @@ class FlowDeployer
           type: 'string'
           title: 'Trigger'
           required: true
-          enum: _.pluck(triggers, 'id')
+          enum: _.map(triggers, 'id')
         payload:
           title: "payload"
           description: "Use {{msg}} to send the entire message"
@@ -240,7 +241,7 @@ class FlowDeployer
     intervals = @_filterIntervalNodes nodes
     async.eachSeries intervals, @_registerIntervalDevice, (error) =>
       return callback error if error?
-      deviceIds = _.pluck intervals, 'deviceId'
+      deviceIds = _.map intervals, 'deviceId'
 
       if _.isEmpty deviceIds
         return callback null, nodes

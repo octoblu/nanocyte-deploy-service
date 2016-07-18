@@ -586,6 +586,11 @@ describe 'FlowDeployer', ->
                 id: "a"
                 class: "interval"
                 deviceId: "interval-a"
+            "d511bb27-046b-4efa-847b-0f382db688de":
+              config:
+                id: "a"
+                class: "interval"
+                deviceId: "interval-a"
 
           stopConfig =
             flowData: JSON.stringify flowData
@@ -609,3 +614,4 @@ describe 'FlowDeployer', ->
             $pullAll:
               sendWhitelist: ['interval-a']
           expect(@sut.meshbluHttp.updateDangerously).to.have.been.calledWith 'the-flow-uuid', data
+          expect(@sut.meshbluHttp.updateDangerously).to.have.been.calledOnce
