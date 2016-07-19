@@ -1,12 +1,14 @@
 _                   = require 'lodash'
 async               = require 'async'
 request             = require 'request'
-FLOW_START_NODE     = 'engine-start'
-FLOW_STOP_NODE      = 'engine-stop'
 MeshbluConfig       = require 'meshblu-config'
 debug               = require('debug')('nanocyte-deployer:flow-deployer')
 FlowStatusMessenger = require './flow-status-messenger'
 SimpleBenchmark     = require 'simple-benchmark'
+
+FLOW_START_NODE       = 'engine-start'
+FLOW_STOP_NODE        = 'engine-stop'
+INTERVAL_SERVICE_UUID = '765bd3a4-546d-45e6-a62f-1157281083f0'
 
 class FlowDeployer
   constructor: (options, dependencies={}) ->
@@ -90,6 +92,7 @@ class FlowDeployer
       return callback error if error?
 
       deviceIds = _.map intervals, 'deviceId'
+      _.pull deviceIds, INTERVAL_SERVICE_UUID
 
       if _.isEmpty deviceIds
         return callback null, nodes
@@ -108,6 +111,9 @@ class FlowDeployer
         username: @flowUuid
         password: @flowToken
       json: true
+
+    if node.deviceId == INTERVAL_SERVICE_UUID
+      return callback()
 
     request.delete options, (error, response, body) =>
       return callback error if error?
