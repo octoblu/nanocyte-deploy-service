@@ -187,11 +187,13 @@ class FlowDeployer
           'meshblu.messageHooks': {name: messageHook.name}
           'meshblu.forwarders.broadcast.received': {name: messageHook.name}
           'meshblu.forwarders.message.received': {name: messageHook.name}
+          'meshblu.forwarders.configure.received': {name: messageHook.name}
 
       addNewMessageHooks =
         $addToSet:
           'meshblu.forwarders.broadcast.received': messageHook
           'meshblu.forwarders.message.received': messageHook
+          'meshblu.forwarders.configure.received': messageHook
 
       tasks = [
         async.apply @meshbluHttp.updateDangerously, @flowUuid, pullMessageHooks
@@ -284,6 +286,7 @@ class FlowDeployer
     subscriptions =
       'broadcast.received': [@flowUuid]
       'message.received': [@flowUuid]
+      'configure.received': [@flowUuid]
 
     async.forEachOf subscriptions, @createSubscriptionsForType, callback
 

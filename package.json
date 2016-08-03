@@ -1,6 +1,6 @@
 {
   "name": "nanocyte-deployer",
-  "version": "5.3.0",
+  "version": "5.4.0",
   "description": "Deploy flows to nanocyte",
   "engines": {
     "node": ">=4.0.0"

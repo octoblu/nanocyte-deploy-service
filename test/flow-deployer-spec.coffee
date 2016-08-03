@@ -288,7 +288,7 @@ describe 'FlowDeployer', ->
               'broadcast.sent': ['subscribe-to-this-uuid']
         @sut.createSubscriptions flowConfig, done
 
-      it "should create the subscription to the device's", ->
+      it "should create the subscription to the devices", ->
         subscriberUuid = 'the-flow-uuid'
         emitterUuid = 'subscribe-to-this-uuid'
         type = 'broadcast.sent'
@@ -310,6 +310,13 @@ describe 'FlowDeployer', ->
               method: 'POST'
               name: 'nanocyte-flow-deploy'
               type: 'webhook'
+            'meshblu.forwarders.configure.received':
+              signRequest: true
+              url: 'http://www.zombo.com'
+              method: 'POST'
+              name: 'nanocyte-flow-deploy'
+              type: 'webhook'
+
 
         @pullMessageHooks =
           $pull:
@@ -320,6 +327,8 @@ describe 'FlowDeployer', ->
             'meshblu.forwarders.broadcast.received':
               name: 'nanocyte-flow-deploy'
             'meshblu.forwarders.message.received':
+              name: 'nanocyte-flow-deploy'
+            'meshblu.forwarders.configure.received':
               name: 'nanocyte-flow-deploy'
 
         @removeOldMessageHooks =
